@@ -8,6 +8,7 @@ override CFLAGS += \
 	-ffreestanding \
 	-Wall \
 	-std=c23 \
+	-fno-stack-protector \
 	--target=x86_64-unknown-none-elf
 
 CC := clang
