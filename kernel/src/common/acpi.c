@@ -22,6 +22,7 @@ void load_madt(madt_header_t *madt_p) {
         switch (entry_type) {
         default:
             printf("unrecognized MADT entry type %X\r\n", entry_type);
+            break;
         }
         pos += record_length;
     }

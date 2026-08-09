@@ -225,7 +225,8 @@ size_t write_rep(FILE *restrict stream, int count, const char *buf,
     return 0;
 }
 
-static const char UPPER_HEX[16] = "0123456789ABCDEF";
+static constexpr const char UPPER_HEX[16] = "0123456789ABCDEF";
+static constexpr const char LOWER_HEX[16] = "0123456789abcdef";
 
 // Actual implementation
 int vfprintf(FILE *restrict stream, const char *restrict format,
@@ -484,6 +485,29 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
             }
             WRITE_CHECKED(stream, len, string, bytes_printed);
             break;
+        case 'p':
+            const void* ptr = va_arg(vlist, const void*);
+            // TODO: Flags
+            if(!ptr)
+                WRITE_CHECKED(stream, 6, "(null)", bytes_printed);
+            else {
+                uintptr_t val = (uintptr_t)ptr;
+                char buf[sizeof(uintptr_t)*2 + 2] = {};
+                char* const bufend = &buf[sizeof(buf)];
+                char* pos = bufend;
+                while(val != 0) {
+                    *--pos = LOWER_HEX[val & 0xF];
+                    val >>= 4;
+                }
+
+                *--pos = 'x';
+                *--pos = '0';
+
+                size_t len = bufend - pos;
+                WRITE_CHECKED(stream, len, pos, bytes_printed);
+            }
+            break;
+
         default:
             WRITE_CHECKED(stream, 4, "TODO", bytes_printed);
         }
