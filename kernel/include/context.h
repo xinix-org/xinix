@@ -14,3 +14,6 @@ typedef struct kernel_context {
 } kcontext_t;
 
 kcontext_t *getcontext(void);
+
+void save_full_ucontext(ucontext_t* uctx);
+void load_full_ucontext(ucontext_t* uctx);
