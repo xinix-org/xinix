@@ -5,7 +5,9 @@
 #include <elf.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
+// FIXME: missing string.h on some targets
+// #include <string.h>
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 #include <vmap.h>
 
 #include <got.h>
