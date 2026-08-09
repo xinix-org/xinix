@@ -83,7 +83,7 @@ void load_idt() {
 #define print_reg(name, regexpr)                                               \
     printf("\t" name " = %#.16llX", (unsigned long long)(regexpr))
 
-static constexpr const char flags_bits[16] = {" T  ODITSZ A P C"};
+#define test_flag(eflags, bit) ((unsigned)(bool)((eflags) & (1 << (bit))))
 
 void print_ucontext(const ucontext_t *context) {
     print_reg("RAX", context->gregs[0]);
@@ -115,13 +115,16 @@ void print_ucontext(const ucontext_t *context) {
     printf("\r\n");
     print_reg("RFLAGS", context->rflags);
 
-    char eflags[] = "                ";
-
-    for (size_t n = 16; n > 0; n--)
-        if (context->rflags & (1 << (16 - n)))
-            eflags[n - 1] = flags_bits[n - 1];
-
-    printf("  [%s]\r\n\r\n", eflags);
+    printf("\r\n\t[CF=%X, PF=%X, AF=%X, ZF=%X, SF=%X, TF=%X, IF=%X, DF=%X, OF=%X, "
+           "IOPL=%X, NT=%X, AC=%X, ID=%X]\r\n\r\n",
+           test_flag(context->rflags, 0), test_flag(context->rflags, 2),
+           test_flag(context->rflags, 4), test_flag(context->rflags, 6),
+           test_flag(context->rflags, 7), test_flag(context->rflags, 8),
+           test_flag(context->rflags, 9), test_flag(context->rflags, 10),
+           test_flag(context->rflags, 11),
+           (unsigned)((context->rflags >> 12) & 0x3),
+           test_flag(context->rflags, 14), test_flag(context->rflags, 18),
+           test_flag(context->rflags, 21));
 
     printf("\tES = %#.4X\tCS = %#.4X [CPL = %X]\r\n", context->sregs[0],
            context->sregs[1], context->sregs[1] & 0x3);
