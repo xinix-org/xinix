@@ -1,5 +1,6 @@
 #include "context.h"
 #include "cpuid.h"
+#include "usercontext.h"
 #include <acpi.h>
 #include <auxv.h>
 #include <framebuffer.h>
@@ -79,24 +80,18 @@ void load_idt() {
     __asm__ volatile("lidt %0" ::"m"(descriptor));
 }
 
-struct stack_frame {
-    size_t rax;
-    // TODO
-};
 
 [[gnu::used]]
-void handle_int(struct stack_frame *frame, int irq) {
+ucontext_t * handle_int(ucontext_t *context, int irq) {
     printf("Got Interrupt %X\r\n", irq);
+    return context;
 }
 
-struct stack_frame_with_code {
-    size_t rax;
-    // TODO
-};
 
 [[gnu::used]]
-void handle_int_with_code(struct stack_frame *frame, int irq) {
+ucontext_t * handle_int_with_code(ucontext_t *context, int irq, long errcode) {
     printf("Got Interrupt %X\r\n", irq);
+    return context;
 }
 
 extern void init_context(kcontext_t *ctx);
@@ -179,8 +174,29 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     }
     printf("\r\n\r\n");
 
+    kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
+    if (!ctx) {
+        printf("Error allocating initial core kcontext\r\n");
+        hcf();
+    }
+    ucontext_t* tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
+    if(!tctx) {
+        printf("Error allocating initial kernel thread context");
+        hcf();
+    }
+    memset(tctx, 0, sizeof(ucontext_t));
+    // tctx->xsave_size = FXSAVE_SIZE; // Uncomment when we turn on cr4.fxsr
+    ctx->total_context_size = sizeof(kcontext_t);
+    ctx->self = ctx;
+    ctx->current_thread = tctx;
+
+    init_context(ctx);
+
+    printf("Kernel Context is: %p\r\n", getcontext());
+    printf("Thread Context is: %p\r\n", ctx->current_thread);
+
     // Test IDT
-    __asm__ volatile("int3");
+    __asm__ volatile("int $0x20"); // int3 is intercepted by qemu in debug mode
 
     printf("\r\n");
 
@@ -195,18 +211,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     printf("\r\n");
 
     load_system_descriptor_tables();
-
-    kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
-    if (!ctx) {
-        printf("Error allocating initial core kcontext\r\n");
-        hcf();
-    }
-    ctx->total_context_size = sizeof(kcontext_t);
-    ctx->self = ctx;
-
-    init_context(ctx);
-
-    printf("Kernel Context is: %p", getcontext());
 
     hcf();
 }
