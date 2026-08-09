@@ -80,9 +80,60 @@ void load_idt() {
     __asm__ volatile("lidt %0" ::"m"(descriptor));
 }
 
+#define print_reg(name, regexpr)                                               \
+    printf("\t" name " = %#.16llX", (unsigned long long)(regexpr))
+
+static constexpr const char flags_bits[16] = {" T  ODITSZ A P C"};
+
+void print_ucontext(const ucontext_t *context) {
+    print_reg("RAX", context->gregs[0]);
+    print_reg("R8 ", context->gregs[8]);
+    printf("\r\n");
+    print_reg("RCX", context->gregs[1]);
+    print_reg("R9 ", context->gregs[9]);
+    printf("\r\n");
+    print_reg("RDX", context->gregs[2]);
+    print_reg("R10", context->gregs[10]);
+    printf("\r\n");
+    print_reg("RBX", context->gregs[3]);
+    print_reg("R11", context->gregs[11]);
+    printf("\r\n");
+    print_reg("RSP", context->gregs[4]);
+    print_reg("R12", context->gregs[12]);
+    printf("\r\n");
+    print_reg("RBP", context->gregs[5]);
+    print_reg("R13", context->gregs[13]);
+    printf("\r\n");
+    print_reg("RSI", context->gregs[6]);
+    print_reg("R14", context->gregs[14]);
+    printf("\r\n");
+    print_reg("RDI", context->gregs[7]);
+    print_reg("R15", context->gregs[15]);
+    printf("\r\n");
+    printf("\r\n");
+    print_reg("RIP", context->rip);
+    printf("\r\n");
+    print_reg("RFLAGS", context->rflags);
+
+    char eflags[] = "                ";
+
+    for (size_t n = 16; n > 0; n--)
+        if (context->rflags & (1 << (16 - n)))
+            eflags[n - 1] = flags_bits[n - 1];
+
+    printf("  [%s]\r\n\r\n", eflags);
+
+    printf("\tES = %#.4X\tCS = %#.4X [CPL = %X]\r\n", context->sregs[0],
+           context->sregs[1], context->sregs[1] & 0x3);
+    printf("\tDS = %#.4X\tSS = %#.4X\r\n", context->sregs[2],
+           context->sregs[3]);
+}
+
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
     printf("Got Interrupt %X\r\n", irq);
+
+    print_ucontext(context);
 
     if (irq == 0x20) {
         context->gregs[0] = "Hello from Beyond the Interrupt!";
@@ -93,7 +144,10 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
 
 [[gnu::used]]
 ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
-    printf("Got Interrupt %X\r\n", irq);
+    printf("Got Interrupt %X (err code %lX)\r\n", irq, errcode);
+
+    print_ucontext(context);
+
     return context;
 }
 
