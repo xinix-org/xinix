@@ -67,11 +67,14 @@ isr_stub\n:
   1:
   cld
   mov esi, \n
+  mov rbp, rsp
+  and rsp, ~15
   .ifgt \hascode /* hascode: Non-zero */
     call handle_int_with_code
   .else /* hascode: Zero */
     call handle_int
   .endif
+  mov rsp, rbp
   
   mov rdi, rax
   lea rcx, [rdi+512]
