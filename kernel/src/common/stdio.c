@@ -375,7 +375,7 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
                 precision = 1;
             }
             int needed_precision = sizeof(unsigned long long) * 2 -
-                                   (stdc_leading_zeros(value) + 3) / 4;
+                                   stdc_leading_zeros(value) / 4;
             if (needed_precision > precision) {
                 precision = needed_precision;
             }
