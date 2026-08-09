@@ -34,9 +34,9 @@ LD := ld.lld
 
 srcdirs := src/common src/$(ARCH)
 srcfiles_c := $(patsubst src/%,%,$(shell find $(srcdirs) -type f -name '*.c'))
-srcfiles_asm := $(patsubst src/%,%,$(shell find $(srcdirs) -type f -name '*.S' ))
-objs := $(srcfiles_c:%.c=target/%.o) $(srcfiles_asm:%.S=target/%.o)
-depfiles := $(srcfiles_c:%.c=target/%.d) $(srcfiles_asm:%.S=target/%.d)
+srcfiles_asm := $(patsubst src/%,%,$(shell find $(srcdirs) -type f -name '*.s' ))
+objs := $(srcfiles_c:%.c=target/%.o) $(srcfiles_asm:%.s=target/%.o)
+depfiles := $(srcfiles_c:%.c=target/%.d) $(srcfiles_asm:%.s=target/%.d)
 output := target/kernel
 
 all: $(output)
@@ -53,6 +53,6 @@ target/%.o: src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-target/%.o: src/%.S
+target/%.o: src/%.s
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
