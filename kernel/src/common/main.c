@@ -99,7 +99,7 @@ void handle_int_with_code(struct stack_frame *frame, int irq) {
     printf("Got Interrupt %X\r\n", irq);
 }
 
-extern void init_context(kcontext_t* ctx);
+extern void init_context(kcontext_t *ctx);
 
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
@@ -196,14 +196,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
 
     load_system_descriptor_tables();
 
-    kcontext_t* ctx = calloc(1, sizeof(kcontext_t));
-    if(!ctx){
+    kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
+    if (!ctx) {
         printf("Error allocating initial core kcontext\r\n");
         hcf();
     }
     ctx->total_context_size = sizeof(kcontext_t);
     ctx->self = ctx;
-    
+
     init_context(ctx);
 
     printf("Kernel Context is: %p", getcontext());

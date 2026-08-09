@@ -5,16 +5,16 @@
 #define FXSAVE_SIZE 64
 
 struct user_context {
-    void* gregs[16];
-    void* fsgsbase[2];
+    void *gregs[16];
+    void *fsgsbase[2];
     /// Legacy Segment entries
     /// Order: [es, cs, ds, ss, fs, gs, tss, ldt]
     uint16_t sregs[8];
-    void* tdata;
+    void *tdata;
     uint64_t cr3;
-    void* dregs[6];
+    void *dregs[6];
     uint64_t thread_flags[4];
-    void* _pad[31];
+    void *_pad[31];
 
     /// If 0, no xsave/fxsave data stored at all
     /// If `FXSAVE_SIZE`, contains only fxsave state

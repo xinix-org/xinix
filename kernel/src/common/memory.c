@@ -70,16 +70,19 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 char bump_heap[BUMP_HEAP_SIZE] = {};
 size_t bump_heap_ptr = 0;
 
-void *malloc(size_t size) {
+void *aligned_alloc(size_t alignment, size_t size) {
+    // align the heap first
+    bump_heap_ptr = (bump_heap_ptr + alignment - 1) & ~(alignment - 1);
     if (BUMP_HEAP_SIZE - bump_heap_ptr < size) {
         return nullptr;
     } else {
         void *result = &bump_heap[bump_heap_ptr];
-        size_t align = sizeof(max_align_t);
-        bump_heap_ptr += (size + align - 1) / align * align;
+        bump_heap_ptr += size;
         return result;
     }
 }
+
+void *malloc(size_t size) { return aligned_alloc(sizeof(max_align_t), size); }
 
 void *calloc(size_t num, size_t size) {
     void *ptr = nullptr;
