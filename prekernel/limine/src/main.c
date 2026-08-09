@@ -8,6 +8,8 @@
 
 #include <limine.h>
 
+#include <membarrier.h>
+
 /// LIMINE REQUESTS ///
 
 [[gnu::used, gnu::section(".limine_requests")]]
@@ -136,7 +138,7 @@ void pkmain(void) {
     // *** NOTE: HERE BE DRAGONS. THIS MUST BE LAST, OR ELSE THE KERNEL WILL ***
     // *** BE TOLD SOME MEMORY IS USABLE THAT DEFINITELY IS NOT.             ***
 
-    __asm__ volatile("" ::: "memory");
+    compiler_barrier();
 
     // one extra for the memory the bump alloc claimed
     memmap_entry *entries = bump_alloc(
