@@ -84,6 +84,11 @@ void load_idt() {
 [[gnu::used]]
 ucontext_t * handle_int(ucontext_t *context, int irq) {
     printf("Got Interrupt %X\r\n", irq);
+
+    if(irq==0x20){
+        context->gregs[0] = "Hello from Beyond the Interrupt!";
+    }
+
     return context;
 }
 
@@ -196,9 +201,10 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     printf("Thread Context is: %p\r\n", ctx->current_thread);
 
     // Test IDT
-    __asm__ volatile("int $0x20"); // int3 is intercepted by qemu in debug mode
+    char* intr_msg = nullptr; 
+    __asm__ volatile("int $0x20" : "=a"(intr_msg)); // int3 is intercepted by qemu in debug mode
 
-    printf("\r\n");
+    printf("\r\n%s\r\n", intr_msg);
 
     // Print physical memory layout
     printf("Physical memory:\r\n");
