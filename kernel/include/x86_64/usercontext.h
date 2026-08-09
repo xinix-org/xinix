@@ -29,4 +29,4 @@ struct user_context {
 };
 
 // Santity check that we have the right amount of padding
-static_assert(sizeof(struct user_context)==1024);
+static_assert(sizeof(struct user_context) == 1024);

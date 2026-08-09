@@ -80,21 +80,19 @@ void load_idt() {
     __asm__ volatile("lidt %0" ::"m"(descriptor));
 }
 
-
 [[gnu::used]]
-ucontext_t * handle_int(ucontext_t *context, int irq) {
+ucontext_t *handle_int(ucontext_t *context, int irq) {
     printf("Got Interrupt %X\r\n", irq);
 
-    if(irq==0x20){
+    if (irq == 0x20) {
         context->gregs[0] = "Hello from Beyond the Interrupt!";
     }
 
     return context;
 }
 
-
 [[gnu::used]]
-ucontext_t * handle_int_with_code(ucontext_t *context, int irq, long errcode) {
+ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
     printf("Got Interrupt %X\r\n", irq);
     return context;
 }
@@ -184,8 +182,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
         printf("Error allocating initial core kcontext\r\n");
         hcf();
     }
-    ucontext_t* tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
-    if(!tctx) {
+    ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
+    if (!tctx) {
         printf("Error allocating initial kernel thread context");
         hcf();
     }
@@ -201,8 +199,10 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     printf("Thread Context is: %p\r\n", ctx->current_thread);
 
     // Test IDT
-    char* intr_msg = nullptr; 
-    __asm__ volatile("int $0x20" : "=a"(intr_msg)); // int3 is intercepted by qemu in debug mode
+    char *intr_msg = nullptr;
+    __asm__ volatile(
+        "int $0x20"
+        : "=a"(intr_msg)); // int3 is intercepted by qemu in debug mode
 
     printf("\r\n%s\r\n", intr_msg);
 
