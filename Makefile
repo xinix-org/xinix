@@ -11,18 +11,11 @@ limine_efi_boot_files := BOOTX64.EFI BOOTIA32.EFI
 all: iso | .env_check
 
 clean:
-	rm -rf target/iso-root
+	rm -rf target/*
 	make -C loader clean
 	make -C prekernel clean
 	make -C externals/flanterm-build clean
 	make -C kernel clean
-
-clobber: clean
-	rm target/*
-	make -C loader clobber
-	make -C prekernel clobber
-	make -C externals/flanterm-build clobber
-	make -C kernel clobber
 
 iso: target/$(IMAGE_NAME).iso | .env_check
 

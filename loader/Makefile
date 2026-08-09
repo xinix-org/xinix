@@ -1,6 +1,6 @@
 .SUFFIXES:
 
-.PHONY: all clean clobber
+.PHONY: all clean
 
 override CFLAGS += \
 	-g \
@@ -29,10 +29,7 @@ all: $(outputs)
 -include $(depfiles)
 
 clean:
-	rm -f target/*.o target/*.d
-
-clobber: clean
-	rm -f $(output)
+	rm -f target/*
 
 target/loader.a: $(objs)
 	ar rcs $@ $(objs)

@@ -24,10 +24,7 @@ all: $(outputs)
 -include $(depfiles)
 
 clean:
-	rm -f target/*.o target/*.d
-
-clobber: clean
-	rm -f $(output)
+	rm -rf target/*
 
 target/flanterm.a: $(objs)
 	ar rcs $@ $(objs)

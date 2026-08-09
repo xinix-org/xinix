@@ -1,6 +1,6 @@
 .SUFFIXES:
 
-.PHONY: all clean clobber
+.PHONY: all clean
 
 override CFLAGS += \
 	-g \
@@ -44,10 +44,7 @@ all: $(output)
 -include $(depfiles)
 
 clean:
-	rm -f target/*.o target/*.d
-
-clobber: clean
-	rm -f $(output)
+	rm -rf target/*
 
 target/kernel: $(objs)
 	$(LD) $(LDFLAGS) -o $@ $(objs) $(LIBS)
