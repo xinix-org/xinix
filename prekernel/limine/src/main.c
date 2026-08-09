@@ -85,7 +85,7 @@ static void init_alloc(void) {
 }
 
 static void *bump_alloc(size_t size) {
-    size = (size + sizeof(max_align_t) - 1) & ~(sizeof(max_align_t) - 1);
+    size = (size + alignof(max_align_t) - 1) & ~(alignof(max_align_t) - 1);
     void *result = alloc_pos + hhdm_request.response->offset;
     alloc_pos += size;
     return result;

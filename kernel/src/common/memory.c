@@ -82,7 +82,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
     }
 }
 
-void *malloc(size_t size) { return aligned_alloc(sizeof(max_align_t), size); }
+void *malloc(size_t size) { return aligned_alloc(alignof(max_align_t), size); }
 
 void *calloc(size_t num, size_t size) {
     void *ptr = nullptr;
