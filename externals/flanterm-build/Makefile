@@ -23,7 +23,7 @@ all: $(outputs)
 -include $(depfiles)
 
 clean:
-	rm -f $(objs) $(depfiles)
+	rm -f target/*.o target/*.d
 
 clobber: clean
 	rm -f $(output)
