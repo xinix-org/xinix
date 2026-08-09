@@ -9,6 +9,7 @@ override CFLAGS += \
 	-Wall \
 	-std=c23 \
 	-fno-stack-protector \
+	-mno-sse \
 	--target=x86_64-unknown-none-elf
 
 override CPPFLAGS += \
@@ -22,7 +23,6 @@ override CPPFLAGS += \
 	'-DARCH="$(ARCH)"'
 
 CC := clang
-
 
 objs := $(patsubst src/%.c,target/%.o,$(shell find src -type f -name '*.c')) $(patsubst ../shared/src/%.c,target/%.o,$(shell find ../shared/src -type f -name '*.c')) $(patsubst ../shared/$(ARCH)/src/%.c,target/%.o,$(shell find ../shared/$(ARCH)/src -type f -name '*.c'))
 depfiles := $(objs:target/%.o=target/%.d)
