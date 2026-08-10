@@ -50,7 +50,7 @@ enum gdt_flags : uint8_t {
     GDT_L = 0b00100000,
 
     GDT_16BIT = 0,
-    GDT_32BIT= GDT_Granularity | GDT_DB,
+    GDT_32BIT = GDT_Granularity | GDT_DB,
     GDT_64BITC = GDT_L,
 };
 
@@ -63,7 +63,8 @@ typedef struct GDT_Entry {
     uint8_t base_hi;
 } gdt_entry_t;
 
-#define USER_SEGMENT_ACCESS(x, dpl) (uint8_t)(0b10010011 | (((x) & 1) << 3) | ((dpl) & 3) << 5)
+#define USER_SEGMENT_ACCESS(x, dpl)                                            \
+    (uint8_t)(0b10010011 | (((x) & 1) << 3) | ((dpl) & 3) << 5)
 
 enum system_segment_type : uint8_t {
     LDT = 0x02,
@@ -72,7 +73,7 @@ enum system_segment_type : uint8_t {
     TSS_Busy = 0x0B,
 };
 
-#define SYSTEM_SEGMENT_ACCESS(ty) (uint8_t) (0b10000000 | ((ty) & 0xF))
+#define SYSTEM_SEGMENT_ACCESS(ty) (uint8_t)(0b10000000 | ((ty) & 0xF))
 
 // TODO: This is x86-64 specific. This should be moved.
 typedef struct IDT_Entry {
@@ -118,43 +119,53 @@ void load_idt() {
 
 static gdt_entry_t gdt_base_entries[16] = {
     {},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = GDT_16BIT},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = GDT_16BIT},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0xF | GDT_32BIT},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF | GDT_32BIT},
-    {.limit_lo = 0, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0x0 | GDT_64BITC},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF | GDT_32BIT},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(1, 0),
+     .flags_and_limit_hi = GDT_16BIT},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(0, 0),
+     .flags_and_limit_hi = GDT_16BIT},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(1, 0),
+     .flags_and_limit_hi = 0xF | GDT_32BIT},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(0, 0),
+     .flags_and_limit_hi = 0xF | GDT_32BIT},
+    {.limit_lo = 0,
+     .access = USER_SEGMENT_ACCESS(1, 0),
+     .flags_and_limit_hi = 0x0 | GDT_64BITC},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(0, 0),
+     .flags_and_limit_hi = 0xF | GDT_32BIT},
     {},
     {.access = SYSTEM_SEGMENT_ACCESS(TSS) & 0x7F},
     {}, // tss continued
-{.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 3), .flags_and_limit_hi = 0xF | GDT_64BITC},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 3), .flags_and_limit_hi = 0xF | GDT_32BIT},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(1, 3),
+     .flags_and_limit_hi = 0xF | GDT_64BITC},
+    {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(0, 3),
+     .flags_and_limit_hi = 0xF | GDT_32BIT},
 };
 
 void load_gdt() {
-    gdt_descriptor_t desc = {
-        .limit = sizeof(gdt_base_entries) -1,
-        .gdt = gdt_base_entries
-    };
+    gdt_descriptor_t desc = {.limit = sizeof(gdt_base_entries) - 1,
+                             .gdt = gdt_base_entries};
 
+    __asm__ volatile("pushq $0x28\n"
+                     "call 1f\n"
+                     "jmp 2f\n"
+                     "1: lgdt %0\n"
+                     "lretq\n"
+                     "2:"
+                     "movl $0x30, %%eax\n"
+                     "mov %%ax, %%ss\n"
+                     "mov %%ax, %%ds\n"
+                     "mov %%ax, %%es\n"
 
-    __asm__ volatile(
-        "pushq $0x28\n"
-        "call 1f\n"
-        "jmp 2f\n"
-        "1: lgdt %0\n"
-        "lretq\n"
-        "2:"
-        "movl $0x30, %%eax\n"
-        "mov %%ax, %%ss\n"
-        "mov %%ax, %%ds\n"
-        "mov %%ax, %%es\n"
-        
-        :: "m"(desc.limit) : "eax", "memory"
-    );
+                     ::"m"(desc.limit)
+                     : "eax", "memory");
 }
-
-
 
 #define print_reg(name, regexpr)                                               \
     printf("\t" name " = %#.16llX", (unsigned long long)(regexpr))
@@ -191,16 +202,17 @@ void print_ucontext(const ucontext_t *context) {
     printf("\r\n");
     print_reg("RFLAGS", context->rflags);
 
-    printf("\r\n\t[CF=%X, PF=%X, AF=%X, ZF=%X, SF=%X, TF=%X, IF=%X, DF=%X, OF=%X, "
-           "IOPL=%X, NT=%X, AC=%X, ID=%X]\r\n\r\n",
-           test_flag(context->rflags, 0), test_flag(context->rflags, 2),
-           test_flag(context->rflags, 4), test_flag(context->rflags, 6),
-           test_flag(context->rflags, 7), test_flag(context->rflags, 8),
-           test_flag(context->rflags, 9), test_flag(context->rflags, 10),
-           test_flag(context->rflags, 11),
-           (unsigned)((context->rflags >> 12) & 0x3),
-           test_flag(context->rflags, 14), test_flag(context->rflags, 18),
-           test_flag(context->rflags, 21));
+    printf(
+        "\r\n\t[CF=%X, PF=%X, AF=%X, ZF=%X, SF=%X, TF=%X, IF=%X, DF=%X, OF=%X, "
+        "IOPL=%X, NT=%X, AC=%X, ID=%X]\r\n\r\n",
+        test_flag(context->rflags, 0), test_flag(context->rflags, 2),
+        test_flag(context->rflags, 4), test_flag(context->rflags, 6),
+        test_flag(context->rflags, 7), test_flag(context->rflags, 8),
+        test_flag(context->rflags, 9), test_flag(context->rflags, 10),
+        test_flag(context->rflags, 11),
+        (unsigned)((context->rflags >> 12) & 0x3),
+        test_flag(context->rflags, 14), test_flag(context->rflags, 18),
+        test_flag(context->rflags, 21));
 
     printf("\tES = %#.4X\tCS = %#.4X [CPL = %X]\r\n", context->sregs[0],
            context->sregs[1], context->sregs[1] & 0x3);
