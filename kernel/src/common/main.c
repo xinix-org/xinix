@@ -44,6 +44,36 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
     *want_comma = true;
 }
 
+enum gdt_flags : uint8_t {
+    GDT_Granularity = 0b1000,
+    GDT_DB = 0b0100,
+    GDT_L = 0b0010,
+
+    GDT_16BIT = 0,
+    GDT_32BIT= GDT_Granularity | GDT_DB,
+    GDT_64BITC = GDT_Granularity | GDT_L,
+};
+
+typedef struct GDT_Entry {
+    _Alignas(8) uint16_t limit_lo;
+    uint16_t base_lo;
+    uint8_t base_mid;
+    volatile uint8_t access;
+    uint8_t flags_and_limit_hi;
+    uint8_t base_hi;
+} gdt_entry_t;
+
+#define USER_SEGMENT_ACCESS(x, dpl) (uint8_t)(0b10010011 | (((x) & 1) << 3) | ((dpl) & 3) << 5)
+
+enum system_segment_type : uint8_t {
+    LDT = 0x02,
+
+    TSS = 0x09,
+    TSS_Busy = 0x0B,
+};
+
+#define SYSTEM_SEGMENT_ACCESS(ty) (uint8_t) (0b10000000 | ((ty) & 0xF))
+
 // TODO: This is x86-64 specific. This should be moved.
 typedef struct IDT_Entry {
     _Alignas(16) uint16_t offset_low;
@@ -67,6 +97,12 @@ typedef struct [[gnu::packed]] IDT_Descriptor {
 extern idt_t IDT;
 extern uintptr_t isr_list[256];
 
+typedef struct GDT_Descriptor {
+    _Alignas(8) uint16_t pad[3];
+    uint16_t limit;
+    gdt_entry_t *gdt;
+} gdt_descriptor_t;
+
 void load_idt() {
     for (int i = 0; i < 256; i++) {
         IDT.entries[i].offset_low = isr_list[i] & 0xFFFF;
@@ -79,6 +115,46 @@ void load_idt() {
     };
     __asm__ volatile("lidt %0" ::"m"(descriptor));
 }
+
+static gdt_entry_t gdt_base_entries[16] = {
+    {},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = GDT_16BIT},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = GDT_16BIT},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0xF0 | GDT_64BITC},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
+    {},
+    {.access = SYSTEM_SEGMENT_ACCESS(TSS) & 0x7F},
+    {}, // tss continued
+{.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 3), .flags_and_limit_hi = 0xF0 | GDT_64BITC},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 3), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
+};
+
+void load_gdt() {
+    gdt_descriptor_t desc = {
+        .limit = sizeof(gdt_base_entries),
+        .gdt = gdt_base_entries
+    };
+
+
+    __asm__ volatile(
+        "pushq $0x28\n"
+        "call 1f\n"
+        "jmp 2f\n"
+        "1: lgdt %0\n"
+        "lretq\n"
+        "2:"
+        "movl $0x30, %%eax\n"
+        "mov %%ax, %%ss\n"
+        "mov %%ax, %%ds\n"
+        "mov %%ax, %%es\n"
+        
+        :: "m"(desc) : "eax"
+    );
+}
+
+
 
 #define print_reg(name, regexpr)                                               \
     printf("\t" name " = %#.16llX", (unsigned long long)(regexpr))
@@ -168,6 +244,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
     load_idt();
+
+    load_gdt();
 
     video_mode *fb_mode = fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
