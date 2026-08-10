@@ -1,17 +1,10 @@
+#pragma once
+
 #include <stdint.h>
 
-typedef struct [[gnu::aligned(0x1000)]] pt {
+typedef struct [[gnu::aligned(0x1000)]] page_table {
     uint64_t entries[512];
-} pt_t;
+} page_table_t;
 
-typedef struct [[gnu::aligned(0x1000)]] pdt {
-    uint64_t entries[512];
-} pdt_t;
-
-typedef struct [[gnu::aligned(0x1000)]] pdpt {
-    uint64_t entries[512];
-} pdpt_t;
-
-typedef struct [[gnu::aligned(0x1000)]] pml4t {
-    uint64_t entries[512];
-} pml4t_t;
+// returns a new PML4T and switches to it
+page_table_t *clone_page_table(void);

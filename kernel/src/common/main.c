@@ -1,11 +1,11 @@
 #include "context.h"
 #include "cpuid.h"
-#include "usercontext.h"
 #include <acpi.h>
 #include <auxv.h>
 #include <framebuffer.h>
 #include <memmap.h>
 #include <memory.h>
+#include <paging.h>
 #include <stdio.h>
 
 #include <flanterm.h>
@@ -362,6 +362,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
                memmap_type_name(memory_map->entries[i].type));
     }
     printf("\r\n");
+
+    clone_page_table();
 
     load_system_descriptor_tables();
 
