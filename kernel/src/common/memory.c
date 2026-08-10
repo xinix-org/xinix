@@ -67,6 +67,7 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 
 #define BUMP_HEAP_SIZE 8192000
 
+[[gnu::aligned(0x10000)]]
 char bump_heap[BUMP_HEAP_SIZE] = {};
 size_t bump_heap_ptr = 0;
 

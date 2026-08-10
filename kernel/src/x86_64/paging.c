@@ -30,12 +30,15 @@ page_table_t *clone_page_table() {
     printf("Old CR3 = %#.16llX\r\n", cr3);
 
     page_table_t *orig_pml4t =
-        (page_table_t *)((cr3 & ~0xFFF) +
+        (page_table_t *)((cr3 & ~0xFFFLL) +
                          getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
     page_table_t *new_pml4t = aligned_alloc(0x1000, sizeof(page_table_t));
     clone_page_table_level(orig_pml4t, new_pml4t, 4);
 
-    cr3 = ((uint64_t)(new_pml4t) & ~0xFFF) | (cr3 & 0xFFF);
+    uint64_t new_pml4t_phys =
+        (uint64_t)(new_pml4t)-getauxval(AT_KXINIX_HHDM_OFFSET).a_val;
+    cr3 = (new_pml4t_phys & ~0xFFFLL) | (cr3 & 0xFFF);
     printf("New CR3 = %#.16llX\r\n", cr3);
     __asm__("mov %0, %%cr3" : : "r"(cr3) : "memory");
+    return new_pml4t;
 }
