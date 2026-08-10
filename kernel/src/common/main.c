@@ -45,13 +45,13 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
 }
 
 enum gdt_flags : uint8_t {
-    GDT_Granularity = 0b1000,
-    GDT_DB = 0b0100,
-    GDT_L = 0b0010,
+    GDT_Granularity = 0b10000000,
+    GDT_DB = 0b01000000,
+    GDT_L = 0b00100000,
 
     GDT_16BIT = 0,
     GDT_32BIT= GDT_Granularity | GDT_DB,
-    GDT_64BITC = GDT_Granularity | GDT_L,
+    GDT_64BITC = GDT_L,
 };
 
 typedef struct GDT_Entry {
@@ -120,20 +120,20 @@ static gdt_entry_t gdt_base_entries[16] = {
     {},
     {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = GDT_16BIT},
     {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = GDT_16BIT},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0xF0 | GDT_64BITC},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0xF | GDT_32BIT},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF | GDT_32BIT},
+    {.limit_lo = 0, .access = USER_SEGMENT_ACCESS(1, 0), .flags_and_limit_hi = 0x0 | GDT_64BITC},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 0), .flags_and_limit_hi = 0xF | GDT_32BIT},
     {},
     {.access = SYSTEM_SEGMENT_ACCESS(TSS) & 0x7F},
     {}, // tss continued
-{.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 3), .flags_and_limit_hi = 0xF0 | GDT_64BITC},
-    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 3), .flags_and_limit_hi = 0xF0 | GDT_32BIT},
+{.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(1, 3), .flags_and_limit_hi = 0xF | GDT_64BITC},
+    {.limit_lo = 0xFFFF, .access = USER_SEGMENT_ACCESS(0, 3), .flags_and_limit_hi = 0xF | GDT_32BIT},
 };
 
 void load_gdt() {
     gdt_descriptor_t desc = {
-        .limit = sizeof(gdt_base_entries),
+        .limit = sizeof(gdt_base_entries) -1,
         .gdt = gdt_base_entries
     };
 
@@ -150,7 +150,7 @@ void load_gdt() {
         "mov %%ax, %%ds\n"
         "mov %%ax, %%es\n"
         
-        :: "m"(desc) : "eax"
+        :: "m"(desc.limit) : "eax", "memory"
     );
 }
 

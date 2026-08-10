@@ -9,7 +9,8 @@ run: build
         -M q35 \
         -cdrom target/xinix-dev.iso \
         -boot d \
-        -m 2G
+        -m 2G \
+        -d int
 
 run-cpu-host: build
     qemu-system-x86_64 \
@@ -26,7 +27,8 @@ debug: build
         -cdrom target/xinix-dev.iso \
         -boot d \
         -m 2G \
-        -s -S &
+        -s -S \
+        -d int &
     gdb -x debug.gdb
 
 format:
