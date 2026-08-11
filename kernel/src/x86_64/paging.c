@@ -8,15 +8,22 @@ static void clone_page_table_level(page_table_t *orig_table,
                                    page_table_t *new_table, int level) {
     for (int idx = 0; idx < 512; idx++) {
         uint64_t entry = orig_table->entries[idx];
-        new_table->entries[idx] = entry;
-        if ((entry & 1) && (level > 1)) {
+        if ((entry & 1) && (level > 2)) {
             page_table_t *orig_lower_table =
                 (page_table_t *)((entry & 0x7FFFFFFF'FFFFF000) +
                                  getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
             page_table_t *new_lower_table =
                 aligned_alloc(0x1000, sizeof(page_table_t));
+            uint64_t new_lower_table_phys =
+                (uint64_t)(new_lower_table)-getauxval(AT_KXINIX_HHDM_OFFSET)
+                    .a_val;
+            new_table->entries[idx] =
+                (entry & 0x80000000'00000FFF) |
+                (new_lower_table_phys & 0x7FFFFFFF'FFFFF000);
             clone_page_table_level(orig_lower_table, new_lower_table,
                                    level - 1);
+        } else {
+            new_table->entries[idx] = entry;
         }
     }
 }
