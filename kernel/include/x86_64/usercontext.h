@@ -9,7 +9,7 @@ struct user_context {
     void *rip;
     uint64_t rflags;
     /// Legacy Segment entries
-    /// Order: [es, cs, ds, ss, fs, gs, /* empty */, ldt]
+    /// Order: [es, cs, ds, ss, fs, gs, tss, ldt]
     uint16_t sregs[8];
     void *tdata;
     void *fsgsbase[2];
