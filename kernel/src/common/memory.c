@@ -2,10 +2,13 @@
 // https://github.com/Limine-Bootloader/limine-c-template-x86-64/blob/trunk/kernel/src/memory.c
 // And then malloc was added
 
+#include "auxv.h"
 #include <limits.h>
+#include <memmap.h>
 #include <memory.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // GCC and Clang reserve the right to generate calls to the following
 // 4 functions even if they are not directly called.
@@ -65,19 +68,42 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 
 // end copied code
 
-#define BUMP_HEAP_SIZE 8192000
+static char *bump_heap_ptr = nullptr;
+static char *bump_heap_limit = nullptr;
 
-[[gnu::aligned(0x10000)]]
-char bump_heap[BUMP_HEAP_SIZE] = {};
-size_t bump_heap_ptr = 0;
+void init_heap() {
+    memmap *memory_map = getauxval(AT_KXINIX_MEMMAP).a_ptr;
+    size_t largest_addr = 0;
+    size_t largest_size = 0;
+    for (int i = 0; i < memory_map->entry_count; i++) {
+        memmap_entry *entry = &memory_map->entries[i];
+        if (entry->type == MEMMAP_USABLE) {
+            if (entry->length > largest_size) {
+                largest_addr = entry->base;
+                largest_size = entry->length;
+            }
+        }
+    }
+    if (largest_size == 0) {
+        printf("!!!NO USABLE HEAP FOUND, HALTING!!!\r\n");
+        for (;;) {
+            __asm__ volatile("hlt");
+        }
+    }
+    bump_heap_ptr =
+        (char *)(largest_addr + getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
+    bump_heap_limit = bump_heap_ptr + largest_size;
+}
 
 void *aligned_alloc(size_t alignment, size_t size) {
     // align the heap first
-    bump_heap_ptr = (bump_heap_ptr + alignment - 1) & ~(alignment - 1);
-    if (BUMP_HEAP_SIZE - bump_heap_ptr < size) {
+    bump_heap_ptr =
+        (char *)(((size_t)(bump_heap_ptr + alignment - 1)) & ~(alignment - 1));
+    if (bump_heap_ptr > bump_heap_limit ||
+        bump_heap_limit - bump_heap_ptr < size) {
         return nullptr;
     } else {
-        void *result = &bump_heap[bump_heap_ptr];
+        void *result = bump_heap_ptr;
         bump_heap_ptr += size;
         return result;
     }

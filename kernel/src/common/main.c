@@ -256,8 +256,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
     load_idt();
-
     load_gdt();
+    init_heap();
 
     video_mode *fb_mode = fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
@@ -354,6 +354,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     printf("\r\n%s\r\n", intr_msg);
 
     // Print physical memory layout
+    printf("HHDM offset: %#.16llX\r\n", getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
     printf("Physical memory:\r\n");
     memmap *memory_map = getauxval(AT_KXINIX_MEMMAP).a_ptr;
     for (int i = 0; i < memory_map->entry_count; i++) {
