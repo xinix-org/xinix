@@ -1,3 +1,5 @@
 cargo (version pending)
 clang (version pending)
 find (any version)
+ld.lld (version pending)
+xorriso (version pending)

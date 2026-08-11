@@ -46,7 +46,12 @@ externals/limine-binary/limine: | .env_check
 	make -C externals/limine-binary
 
 .env_check: REQUIREMENTS.md
-	cargo --version
-	clang --version
-	find --version
-	touch .env_check
+	cargo --version > .env_check
+	echo >> .env_check
+	clang --version >> .env_check
+	echo >> .env_check
+	find --version >> .env_check
+	echo >> .env_check
+	ld.lld --version >> .env_check
+	echo >> .env_check
+	xorriso --version >> .env_check
