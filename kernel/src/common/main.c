@@ -291,7 +291,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
         nullptr, 0, 0, 1, // font and options (using default)
         0, 0, // font scale settings (using default)
         0, // margin (currently using no margin; may change)
-        0 // rotation (don't rotate)
+        0, // rotation (don't rotate)
+        true
     );
     // clang-format on
 
