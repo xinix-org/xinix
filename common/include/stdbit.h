@@ -8,7 +8,7 @@ stdc_leading_zeros_ui(unsigned int _value) _ATTRIBUTE_UNSEQ {
 #if __has_builtin(__builtin_clzg)
     return __builtin_clzg(_value, 32);
 #elif __has_builtin(__builtin_clz)
-    return (value) ? __builtin_clz(value) : 32;
+    return (_value) ? __builtin_clz(_value) : 32;
 #else
     for (unsigned int x = 32; true; x--, _value >>= 1)
         if (!_value)
