@@ -17,6 +17,7 @@ void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp)
     init_cpu_feature_array();
 
     char *argv[] = {"kernel", 0};
+    int argc = 1;
     char *envp[16] = {0};
     auxv_t auxv[16] = {
         {0},
@@ -54,5 +55,5 @@ void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp)
 
     if(rsdp_struct->revision >= 2)
         *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_XSDT_ADDR, .a_un.a_ptr = (void*)(rsdp_struct->xsdt_address + hhdm_offset)};
-
+    kmain(argc, argv, envp, auxv);
 }
