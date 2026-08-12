@@ -50,18 +50,14 @@ static volatile uint64_t limine_requests_end_marker[] =
 /// FUNCTION PROTOTYPES ///
 
 [[noreturn]]
-extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]);
+extern void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp);
 
-extern void init_cpu_feature_array(void);
+[[noreturn]]
+extern void hcf(void);
 
 /// IMPLEMENTATION ///
 
-[[noreturn]]
-static void hcf(void) {
-    for (;;) {
-        __asm__("hlt");
-    }
-}
+
 
 static char *start_of_claim = nullptr;
 static char *alloc_pos = nullptr;
@@ -103,22 +99,9 @@ void pkmain(void) {
 
     init_alloc();
 
-    init_cpu_feature_array();
+    
 
-    char *argv[] = {"kernel", 0};
-    char *envp[] = {0};
-    auxv_t auxv[16] = {
-        {0},
-    };
-
-    auxv_t *auxtarg = auxv;
-
-    char cpu_name[] = ARCH;
-
-    *auxtarg++ = (auxv_t){.a_type = AT_PAGESZ, .a_un.a_val = 4096};
-    *auxtarg++ = (auxv_t){.a_type = AT_PLATFORM, .a_un.a_ptr = cpu_name};
-
-    framebuffer fb;
+    framebuffer fb, *pfb = nullptr;
     if (framebuffer_request.response != nullptr &&
         framebuffer_request.response->framebuffer_count >= 1) {
         struct limine_framebuffer *l_fb =
@@ -128,12 +111,8 @@ void pkmain(void) {
             .mode_count = l_fb->mode_count,
             .modes = (video_mode **)l_fb->modes,
         };
-        *auxtarg++ = (auxv_t){AT_KXINIX_FRAMEBUFFER, {.a_ptr = (void *)&fb}};
+        pfb = &fb;
     }
-
-    uint8_t random[16];
-    if (rand_slow_get_entropy(random) == 0)
-        *auxtarg++ = (auxv_t){.a_type = AT_RANDOM, .a_un.a_ptr = random};
 
     // *** NOTE: HERE BE DRAGONS. THIS MUST BE LAST, OR ELSE THE KERNEL WILL ***
     // *** BE TOLD SOME MEMORY IS USABLE THAT DEFINITELY IS NOT.             ***
@@ -167,32 +146,6 @@ void pkmain(void) {
     }
     memmap map = {.entry_count = memmap_request.response->entry_count + 1,
                   .entries = entries};
-    *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_MEMMAP, .a_un.a_ptr = &map};
 
-    uint64_t hhdm_offset = hhdm_request.response->offset;
-    *auxtarg++ =
-        (auxv_t){.a_type = AT_KXINIX_HHDM_OFFSET, .a_un.a_val = hhdm_offset};
-
-    struct {
-        char signature[8];
-        uint8_t checksum;
-        char oemid[6];
-        uint8_t revision;
-        uint32_t rsdt_address;
-        uint32_t length;
-        uint64_t xsdt_address;
-        uint8_t extended_checksum;
-    } *rsdp = rsdp_request.response->address;
-
-    // TODO: verify checksum
-
-    *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_RSDT_ADDR,
-                          .a_un.a_val = hhdm_offset + rsdp->rsdt_address};
-
-    if (rsdp->revision >= 2) {
-        *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_XSDT_ADDR,
-                              .a_un.a_val = hhdm_offset + rsdp->xsdt_address};
-    }
-
-    kmain(1, argv, envp, auxv);
+    call_kmain(hhdm_request.response->offset, pfb, &map, rsdp_request.response->address);
 }

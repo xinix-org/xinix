@@ -58,7 +58,7 @@ void load_rsdt(void) {
 }
 
 void load_system_descriptor_tables(void) {
-    if (getauxval(AT_KXINIX_XSDT_ADDR).a_val) {
+    if (getauxval(AT_KXINIX_XSDT_ADDR).a_ptr) {
         load_xsdt();
     } else {
         load_rsdt();
