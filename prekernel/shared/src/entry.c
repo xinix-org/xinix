@@ -49,6 +49,9 @@ void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp)
         uint8_t extended_checksum;
     } *rsdp_struct = rsdp;
 
+    if(fb)
+        *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_FRAMEBUFFER, .a_un.a_ptr = fb};
+
     // TODO: validate checksum
 
     *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_RSDT_ADDR, .a_un.a_ptr = (void*)(rsdp_struct->rsdt_address + hhdm_offset)};
