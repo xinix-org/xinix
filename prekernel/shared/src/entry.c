@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <vmap.h>
 #include <sysresult.h>
+#include <hcf.h>
 
 
 typedef void kmain_t(int argc, char *argv[], char *envp[], auxv_t auxv[]);
@@ -18,7 +19,7 @@ extern void init_cpu_feature_array(void);
 
 extern ElfNative_Ehdr _binary_target_xinix_kernel_so_start;
 
-size_t hhdm_offset;
+uintptr_t hhdm_offset;
 
 static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
                             ElfNative_Dyn **dyn_out,
@@ -114,6 +115,18 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
 
     hhdm_offset = _hhdm_offset;
 
+    auto res = loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr, nullptr, aligned_alloc);
+
+    if(SYSRESULT2_CODE(res) < 0)
+        hcf();
+
+    uintptr_t root = SYSRESULT2_VALUE(res, uintptr_t); 
+    const ElfNative_Ehdr* hdr = (const ElfNative_Ehdr*)root;
+
+    ptrdiff_t offset = hdr->e_entry;
+
+    kmain_t* kmain = (kmain_t*)(root + offset);
+
     char *argv[] = {"kernel", 0};
     int argc = 1;
     char *envp[16] = {0};
@@ -166,4 +179,7 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
         *auxtarg++ = (auxv_t){
             .a_type = AT_KXINIX_XSDT_ADDR,
             .a_un.a_ptr = (void *)(rsdp_struct->xsdt_address + hhdm_offset)};
+
+    kmain(argc, argv, envp, auxv);
+    __builtin_trap();
 }

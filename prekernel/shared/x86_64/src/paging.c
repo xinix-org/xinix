@@ -1,7 +1,7 @@
 #include "cpuid.h"
 #include <vmap.h>
 
-extern size_t hhdm_offset;
+extern uintptr_t hhdm_offset;
 
 struct page_table {
     uint64_t entries[512];

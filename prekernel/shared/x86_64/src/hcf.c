@@ -1,3 +1,4 @@
+#include <hcf.h>
 
 [[noreturn]]
 void hcf(void) {
