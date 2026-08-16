@@ -21,6 +21,7 @@ override CPPFLAGS += \
 	-I ../include/$(ARCH) \
 	-I ../../common/include \
 	-I ../../common/include/$(ARCH) \
+	-I ../../loader/include \
 	-I ../../kernel/include \
 	-I $(EXTERNALS)/limine-protocol/include \
 	'-DARCH="$(ARCH)"'

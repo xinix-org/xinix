@@ -146,11 +146,8 @@ size_t strnlen(const char *str, size_t maxlen) {
     return result;
 }
 
-
 // STUBS, for now
-void *valloc(size_t _page_count, enum valloc_flags _flags) {
-    return nullptr;
-}
+void *valloc(size_t _page_count, enum valloc_flags _flags) { return nullptr; }
 
 void *vprotect(void *_base, size_t _page_count, enum valloc_flags _prot_flags) {
     return nullptr;

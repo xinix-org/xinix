@@ -1,16 +1,16 @@
 #include "sysresult.h"
-#include <context.h>
-#include <cpuid.h>
-#include <elf.h>
 #include <acpi.h>
 #include <auxv.h>
+#include <context.h>
+#include <cpuid.h>
+#include <dynld.h>
+#include <elf.h>
 #include <framebuffer.h>
+#include <loader.h>
 #include <memmap.h>
 #include <memory.h>
 #include <paging.h>
 #include <stdio.h>
-#include <loader.h>
-#include <dynld.h>
 
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
@@ -113,7 +113,7 @@ typedef struct GDT_Descriptor {
 void load_idt() {
     for (int i = 0; i < 256; i++) {
         ptrdiff_t offset = isr_list[i];
-        uintptr_t ptr = ((uintptr_t)&isr_list)+offset;
+        uintptr_t ptr = ((uintptr_t)&isr_list) + offset;
         IDT.entries[i].offset_low = ptr & 0xFFFF;
         IDT.entries[i].offset_mid = (ptr >> 16) & 0xFFFF;
         IDT.entries[i].offset_high = ptr >> 32;
@@ -255,8 +255,9 @@ extern void init_context(kcontext_t *ctx);
 extern void init_cpu_feature_array(void);
 
 [[noreturn]]
-extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[], void* base_addr) {
-    
+extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
+                  void *base_addr) {
+
     framebuffer *fb;
 
     for (auxv_t *auxv_ent = auxv; auxv_ent->a_type != AT_NULL; auxv_ent++) {
@@ -266,14 +267,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[], void* bas
 
     init_cpu_feature_array();
 
-    Elf64_Ehdr* ehdr = base_addr;
+    Elf64_Ehdr *ehdr = base_addr;
 
-    Elf64_Phdr* phdrs = (Elf64_Phdr*)(((uintptr_t)base_addr) + ehdr->e_phoff);
+    Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
     size_t phnum = ehdr->e_phnum;
 
     auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
 
-    if(SYSRESULT2_CODE(res) < 0)
+    if (SYSRESULT2_CODE(res) < 0)
         hcf();
 
     fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;

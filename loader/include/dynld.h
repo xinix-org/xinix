@@ -34,5 +34,5 @@ struct DynLibraryEntry {
     const char *dylib_soname;
 };
 
-sysresult2_t dynld_link(ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs, size_t phnum,
-                       const char *file_name, bool no_relocate);
+sysresult2_t dynld_link(ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
+                        size_t phnum, const char *file_name, bool no_relocate);

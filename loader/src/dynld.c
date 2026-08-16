@@ -25,8 +25,8 @@ struct DynldState {
 
 struct DynldState dynld_state;
 
-sysresult2_t dynld_link(ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs, size_t phnum,
-                       const char *file_name, bool no_relocate) {
+sysresult2_t dynld_link(ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
+                        size_t phnum, const char *file_name, bool no_relocate) {
     ElfNative_Dyn *dynent = dyn;
 
     struct DynLibraryEntry ent_build = {};
@@ -78,7 +78,6 @@ sysresult2_t dynld_link(ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs, size_t phnum
 
         dynent++;
     }
-
 
     return SYSRESULT2_ERROR(-1);
 }

@@ -25,12 +25,12 @@ typedef struct {
 // Xinix specific region begins at 64
 
 #define AT_XINIX_CPU_FEATURES_ARRAY 80 // pointer to an array of cpu features
-#define AT_XINIX_CPU_FEATURES_LEN 81 // length of AT_XINIX_CPU_FEATURES_ARRAY
+#define AT_XINIX_CPU_FEATURES_LEN 81   // length of AT_XINIX_CPU_FEATURES_ARRAY
 
 #define AT_XINIX_MAX_USER 95 // Max val of a_type entry for a userspace program
 
 // Xinix Kernel region begins at 96
-#define AT_KXINIX_FRAMEBUFFER 96  // framebuffer structure
+#define AT_KXINIX_FRAMEBUFFER 96 // framebuffer structure
 
 #define AT_KXINIX_BOOTP_GUID 98   // Boot parition GUID (GPT labeled disk)
 #define AT_KXINIX_BOOTP_MBR 99    // Boot partion MBR label

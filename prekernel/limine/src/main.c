@@ -50,14 +50,13 @@ static volatile uint64_t limine_requests_end_marker[] =
 /// FUNCTION PROTOTYPES ///
 
 [[noreturn]]
-extern void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp);
+extern void call_kmain(size_t hhdm_offset, framebuffer *fb, memmap *memmap,
+                       void *rsdp, void *(*aligned_alloc)(size_t, size_t));
 
 [[noreturn]]
 extern void hcf(void);
 
 /// IMPLEMENTATION ///
-
-
 
 static char *start_of_claim = nullptr;
 static char *alloc_pos = nullptr;
@@ -80,11 +79,15 @@ static void init_alloc(void) {
     start_of_claim = alloc_pos = (char *)largest_addr;
 }
 
-static void *bump_alloc(size_t size) {
-    size = (size + alignof(max_align_t) - 1) & ~(alignof(max_align_t) - 1);
+static void *aligned_bump_alloc(size_t alignment, size_t size) {
+    size = (size + alignment - 1) & ~(alignment - 1);
     void *result = alloc_pos + hhdm_request.response->offset;
     alloc_pos += size;
     return result;
+}
+
+static void *bump_alloc(size_t size) {
+    return aligned_bump_alloc(alignof(max_align_t), size);
 }
 
 [[noreturn]]
@@ -98,8 +101,6 @@ void pkmain(void) {
     }
 
     init_alloc();
-
-    
 
     framebuffer fb, *pfb = nullptr;
     if (framebuffer_request.response != nullptr &&
@@ -147,5 +148,6 @@ void pkmain(void) {
     memmap map = {.entry_count = memmap_request.response->entry_count + 1,
                   .entries = entries};
 
-    call_kmain(hhdm_request.response->offset, pfb, &map, rsdp_request.response->address);
+    call_kmain(hhdm_request.response->offset, pfb, &map,
+               rsdp_request.response->address, aligned_bump_alloc);
 }
