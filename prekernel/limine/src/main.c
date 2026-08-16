@@ -80,7 +80,8 @@ static void init_alloc(void) {
 }
 
 static void *aligned_bump_alloc(size_t alignment, size_t size) {
-    size = (size + alignment - 1) & ~(alignment - 1);
+    alloc_pos =
+        (char *)(((size_t)(alloc_pos + alignment - 1)) & ~(alignment - 1));
     void *result = alloc_pos + hhdm_request.response->offset;
     alloc_pos += size;
     return result;
