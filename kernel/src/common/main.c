@@ -1,5 +1,7 @@
-#include "context.h"
-#include "cpuid.h"
+#include "sysresult.h"
+#include <context.h>
+#include <cpuid.h>
+#include <elf.h>
 #include <acpi.h>
 #include <auxv.h>
 #include <framebuffer.h>
@@ -7,9 +9,13 @@
 #include <memory.h>
 #include <paging.h>
 #include <stdio.h>
+#include <loader.h>
+#include <dynld.h>
 
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
+
+extern ElfNative_Dyn _DYNAMIC[];
 
 [[noreturn]]
 static void hcf(void) {
@@ -106,9 +112,11 @@ typedef struct GDT_Descriptor {
 
 void load_idt() {
     for (int i = 0; i < 256; i++) {
-        IDT.entries[i].offset_low = isr_list[i] & 0xFFFF;
-        IDT.entries[i].offset_mid = (isr_list[i] >> 16) & 0xFFFF;
-        IDT.entries[i].offset_high = isr_list[i] >> 32;
+        ptrdiff_t offset = isr_list[i];
+        uintptr_t ptr = ((uintptr_t)&isr_list)+offset;
+        IDT.entries[i].offset_low = ptr & 0xFFFF;
+        IDT.entries[i].offset_mid = (ptr >> 16) & 0xFFFF;
+        IDT.entries[i].offset_high = ptr >> 32;
     }
     idt_descriptor_t descriptor = {
         .limit = 255 * 16,
@@ -244,14 +252,29 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 
 extern void init_context(kcontext_t *ctx);
 
+extern void init_cpu_feature_array(void);
+
 [[noreturn]]
-extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
+extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[], void* base_addr) {
+    
     framebuffer *fb;
 
     for (auxv_t *auxv_ent = auxv; auxv_ent->a_type != AT_NULL; auxv_ent++) {
         if (auxv_ent->a_type != AT_IGNORE)
             __auxent[auxv_ent->a_type - 2] = auxv_ent->a_un;
     }
+
+    init_cpu_feature_array();
+
+    Elf64_Ehdr* ehdr = base_addr;
+
+    Elf64_Phdr* phdrs = (Elf64_Phdr*)(((uintptr_t)base_addr) + ehdr->e_phoff);
+    size_t phnum = ehdr->e_phnum;
+
+    auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
+
+    if(SYSRESULT2_CODE(res) < 0)
+        hcf();
 
     fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 

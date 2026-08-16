@@ -133,7 +133,7 @@ isr_stub\n:
 .endm
 
 .macro IsrListEntry n:req
-  .quad isr_stub\n
+  .quad isr_stub\n - isr_list
 .endm
 
 .section .text
@@ -163,8 +163,19 @@ IsrStub 21 1
   .set i,i+1
 .endr
 
+.hidden isr_list
+.global isr_list
+isr_list:
+.align 8
+.set i,0
+.rept 256
+  IsrListEntry %i
+  .set i,i+1
+.endr
+
 .section .data
 
+.hidden IDT
 .global IDT
 IDT:
 .align 16
@@ -174,11 +185,3 @@ IDT:
   .set i,i+1
 .endr
 
-.global isr_list
-isr_list:
-.align 8
-.set i,0
-.rept 256
-  IsrListEntry %i
-  .set i,i+1
-.endr

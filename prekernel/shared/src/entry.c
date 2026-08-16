@@ -5,12 +5,13 @@
 #include <framebuffer.h>
 #include <stddef.h>
 #include <cpuid.h>
+#include <elf.h>
 
-[[noreturn]]
-extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]);
+typedef void kmain_t(int argc, char *argv[], char *envp[], auxv_t auxv[]);
 
 extern void init_cpu_feature_array(void);
 
+extern ElfNative_Ehdr _binary_target_xinix_kernel_so_start;
 
 [[noreturn]]
 void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp) {
@@ -37,6 +38,7 @@ void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp)
 
     *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_HHDM_OFFSET, .a_un.a_val = hhdm_offset};
     *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_MEMMAP, .a_un.a_ptr = memmap};
+    *auxtarg++ = (auxv_t){.a_type = AT_BASE, .a_un.a_ptr = nullptr};
 
     struct {
         char signature[8];
@@ -58,5 +60,6 @@ void call_kmain(size_t hhdm_offset, framebuffer* fb, memmap* memmap, void* rsdp)
 
     if(rsdp_struct->revision >= 2)
         *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_XSDT_ADDR, .a_un.a_ptr = (void*)(rsdp_struct->xsdt_address + hhdm_offset)};
-    kmain(argc, argv, envp, auxv);
+    
+    
 }
