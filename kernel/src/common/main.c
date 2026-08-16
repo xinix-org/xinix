@@ -349,7 +349,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
     
     load_gdt();
-    init_heap();
 
     video_mode *fb_mode = fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
@@ -398,6 +397,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     if (SYSRESULT2_CODE(res) < 0)
         hcf();
+
+    init_heap();
 
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";
