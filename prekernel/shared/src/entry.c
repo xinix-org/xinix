@@ -23,7 +23,7 @@ uintptr_t hhdm_offset;
 
 static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
                             ElfNative_Dyn **dyn_out,
-                            ElfNative_Phdr **phdr_out, void*(*aligned_alloc)(size_t sz, size_t align)) {
+                            ElfNative_Phdr **phdr_out, void*(*aligned_alloc)(size_t align, size_t sz)) {
     SYSRESULT_TRY_SYSRESULT2(
         elf_validate_ident_native(&e_hdr->e_ident, ELFOSABINONE));
 
@@ -33,11 +33,11 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
     if (e_hdr->e_type != ET_DYN)
         return SYSRESULT2_ERROR(ERR_GENERIC);
 
-    if (e_hdr->e_phnum != sizeof(ElfNative_Phdr))
+    if (e_hdr->e_phentsize != sizeof(ElfNative_Phdr))
         return SYSRESULT2_ERROR(ERR_GENERIC);
 
     ElfNative_Phdr *phdrs =
-        (ElfNative_Phdr *)((char *)e_hdr) + (e_hdr->e_phoff);
+        (ElfNative_Phdr *)(((char *)e_hdr) + (e_hdr->e_phoff));
     size_t phnum = e_hdr->e_phnum;
 
     ElfNative_Phdr *phdrs_end = phdrs + phnum;
@@ -61,7 +61,9 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
         last_rpa = max((pos->p_paddr + pos->p_memsz), last_rpa);
     }
 
-    void *root = aligned_alloc((last_rpa + 4095), 4096);
+    void *root = aligned_alloc(4096, (last_rpa + 4095) & !4095);
+    if(!root)
+        return SYSRESULT2_ERROR(ERR_GENERIC);
 
     for (auto *pos = phdrs; pos != phdrs_end; pos++) {
         if (pos->p_type != PT_LOAD)
@@ -121,9 +123,9 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
         hcf();
 
     uintptr_t root = SYSRESULT2_VALUE(res, uintptr_t); 
-    const ElfNative_Ehdr* hdr = (const ElfNative_Ehdr*)root;
+    
 
-    ptrdiff_t offset = hdr->e_entry;
+    ptrdiff_t offset = _binary_target_xinix_kernel_so_start.e_entry;
 
     kmain_t* kmain = (kmain_t*)(root + offset);
 

@@ -34,5 +34,5 @@ typedef struct _sysresult_2 sysresult2_t;
     do {                                                                       \
         auto _val = (val);                                                     \
         if (_val < 0)                                                          \
-            return SYSRESULT2_ERROR(val);                                      \
+            return SYSRESULT2_ERROR(_val);                                      \
     } while (0)
