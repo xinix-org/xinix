@@ -29,7 +29,6 @@ override LDFLAGS += \
 	-m elf_x86_64 \
 	-nostdlib \
 	-shared \
-	--dynamic-linker=/boot/xinix-kernel.so \
 	-z max-page-size=0x1000 \
 	--gc-sections \
 	--pack-dyn-relocs=relr \

@@ -3,7 +3,7 @@ ENTRY(_kstart)
 
 PHDRS
 {
-    phdrs PT_PHDR;
+    phdrs PT_PHDR PHDRS;
     interp PT_INTERP;
     text PT_LOAD FILEHDR PHDRS;
     data PT_LOAD;
@@ -14,10 +14,10 @@ PHDRS
 
 SECTIONS
 {
-    . = 0x1000;
+    . = 1024;
     .interp : {
         *(.interp)
-    } :text :interp
+    } :interp :text
 
     .text :{
         *(.text)

@@ -61,7 +61,7 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
         last_rpa = max((pos->p_paddr + pos->p_memsz), last_rpa);
     }
 
-    void *root = aligned_alloc(4096, (last_rpa + 4095) & !4095);
+    void *root = aligned_alloc(4096, (last_rpa + 4095) & ~4095);
     if(!root)
         return SYSRESULT2_ERROR(ERR_GENERIC);
 
@@ -78,7 +78,7 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
         if (pos->p_flags & PF_X)
             _flags |= PROT_EXEC;
 
-        auto base_rpa = pos->p_paddr & !4095;
+        auto base_rpa = pos->p_paddr & ~4095;
         auto end_rpa = pos->p_paddr + pos->p_memsz;
 
         size_t total_len = ((end_rpa - base_rpa) + 4095) >> 12;

@@ -15,6 +15,9 @@
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
 
+[[gnu::section(".interp")]]
+const char __interp[16] = "/xinix-kernel.so";
+
 extern ElfNative_Dyn _DYNAMIC[];
 
 [[noreturn]]
