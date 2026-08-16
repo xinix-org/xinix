@@ -22,7 +22,7 @@ iso: target/$(IMAGE_NAME).iso | .env_check
 target/$(IMAGE_NAME).iso: kernel externals/limine-binary/limine limine.conf | .env_check
 	rm -rf target/iso-root
 	mkdir -p target/iso-root/boot/limine
-	cp -v kernel/target/xinix-kernel.so target/iso-root/boot/
+	cp -v prekernel/target/xinix-loader target/iso-root/boot/
 	cp -v limine.conf $(limine_bios_files:%=externals/limine-binary/%) target/iso-root/boot/limine/
 	mkdir -p target/iso-root/EFI/BOOT
 	cp -v $(limine_efi_boot_files:%=externals/limine-binary/%) target/iso-root/EFI/BOOT
