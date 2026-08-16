@@ -22,6 +22,7 @@ extern ElfNative_Dyn _DYNAMIC[];
 
 [[noreturn]]
 static void hcf(void) {
+    __asm__ volatile("int3"); // Trigger a debug trap
     for (;;) {
         __asm__ volatile("hlt");
     }
