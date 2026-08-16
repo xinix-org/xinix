@@ -346,13 +346,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
     size_t phnum = ehdr->e_phnum;
 
-    auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
-
-    if (SYSRESULT2_CODE(res) < 0)
-        hcf();
-
     fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
-
     
     load_gdt();
     init_heap();
@@ -394,6 +388,17 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     );
     // clang-format on
 
+    FILE stdout_fd = (FILE){};
+
+    stdout = &stdout_fd;
+    stdout->data = ft_ctx;
+    stdout->write = stdout_handler;
+
+    auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
+
+    if (SYSRESULT2_CODE(res) < 0)
+        hcf();
+
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";
     flanterm_write(ft_ctx, msg, sizeof(msg));
@@ -402,9 +407,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     memcpy(alloc_test, "Did malloc work?\r\nOf course it did :D\r\n", 40);
     flanterm_write(ft_ctx, alloc_test, 40);
 
-    stdout = calloc(1, sizeof(FILE));
-    stdout->data = ft_ctx;
-    stdout->write = stdout_handler;
+    
 
     printf("Address of printf is %#.16llX\r\n\r\n", printf);
 
