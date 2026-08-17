@@ -12,9 +12,9 @@
 #include <paging.h>
 #include <stdio.h>
 
+#include <auxfuncs.h>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
-#include <auxfuncs.h>
 #include <location.h>
 
 [[gnu::section(".interp")]]
@@ -298,11 +298,15 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
 
     print_ucontext(context);
 
-    if(irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 && (size_t)context->gregs[3] == DEBUG_MAGIC && (size_t)context->gregs[15] == DEBUG_MAGIC2) {
+    if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 &&
+        (size_t)context->gregs[3] == DEBUG_MAGIC &&
+        (size_t)context->gregs[15] == DEBUG_MAGIC2) {
         printf("\r\n");
-        printf("Debug Trap from %s (%X)\r\n", context->gregs[6], context->gregs[1]);
+        printf("Debug Trap from %s (%X)\r\n", context->gregs[6],
+               context->gregs[1]);
         printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
-        printf("Function %s (%p)\r\n\r\n", context->gregs[2], context->gregs[0]);
+        printf("Function %s (%p)\r\n\r\n", context->gregs[2],
+               context->gregs[0]);
     }
 
     if (irq == 0x20) {
@@ -336,7 +340,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     }
 
     framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
-
 
     load_idt();
 
@@ -464,27 +467,31 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
     size_t phnum = ehdr->e_phnum;
 
-    auto res = dynld_link(base_addr, _DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
+    auto res =
+        dynld_link(base_addr, _DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
 
     if (SYSRESULT2_CODE(res) < 0)
         hcf(SYSRESULT2_CODE(res), CURRENT());
 
-    auto self = SYSRESULT2_VALUE(res, struct DynLibraryEntry*);
-    if(self->dylib_jmprel_type == DT_RELA && self->dylib_plt_rela) {
+    auto self = SYSRESULT2_VALUE(res, struct DynLibraryEntry *);
+    if (self->dylib_jmprel_type == DT_RELA && self->dylib_plt_rela) {
         size_t count = self->dylib_pltrelsz / sizeof(ElfNative_Rela);
         printf("Got extraneous relas\r\n");
-        for(auto ptr = self->dylib_plt_rela; ptr != (self->dylib_plt_rela) + count; ptr ++){
-            void* offset = ((char*)self->dylib_base) + ptr->r_offset;
+        for (auto ptr = self->dylib_plt_rela;
+             ptr != (self->dylib_plt_rela) + count; ptr++) {
+            void *offset = ((char *)self->dylib_base) + ptr->r_offset;
             ElfNative_Reloc relty = ELFNATIVE_R_TYPE(ptr->r_info);
             size_t syme = ELFNATIVE_R_SYM(ptr->r_info);
-            const ElfNative_Sym* sym = &self->dylib_symtab[syme];
-            const char* name = self->dylib_strtab + sym->st_name;
+            const ElfNative_Sym *sym = &self->dylib_symtab[syme];
+            const char *name = self->dylib_strtab + sym->st_name;
 
-            const char* relname = rel_describe(relty);
-            if(relname) {
-                printf("\tRELA %s (%s + %#zx): %p\r\n", relname, name, ptr->r_addend, offset);
+            const char *relname = rel_describe(relty);
+            if (relname) {
+                printf("\tRELA %s (%s + %#zx): %p\r\n", relname, name,
+                       ptr->r_addend, offset);
             } else {
-                printf("\tRELA <unknown type %x> (%s + %#zx): %p\r\n", (unsigned int)relty, name, ptr->r_addend, offset);
+                printf("\tRELA <unknown type %x> (%s + %#zx): %p\r\n",
+                       (unsigned int)relty, name, ptr->r_addend, offset);
             }
         }
 

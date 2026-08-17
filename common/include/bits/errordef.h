@@ -1,5 +1,5 @@
 #ifndef SYSRESULT_DEF_ERROR_CONSTANT
-# error Cannot include this header directly. Include <sysresult.h> instead
+#error Cannot include this header directly. Include <sysresult.h> instead
 #endif
 
 // ERR_GENERIC = -1,

@@ -60,7 +60,6 @@ stdc_leading_zeros_ull(unsigned long long _value) _ATTRIBUTE_UNSEQ {
 #endif
 }
 
-
 static inline unsigned int
 stdc_trailing_zeros_ui(unsigned int _value) _ATTRIBUTE_UNSEQ {
 #if __has_builtin(__builtin_ctzg)
@@ -137,7 +136,8 @@ stdc_trailing_zeros_ull(unsigned long long _value) _ATTRIBUTE_UNSEQ {
 #define stdc_leading_zeros(value)                                              \
     _STDBIT_DEF_GENERIC_MAP(value, stdc_leading_zeros)
 
-#define stdc_trailing_zeros(value) _STDBIT_DEF_GENERIC_MAP(value, stdc_trailing_zeros)
+#define stdc_trailing_zeros(value)                                             \
+    _STDBIT_DEF_GENERIC_MAP(value, stdc_trailing_zeros)
 
 #if __has_builtin(__builtin_stdc_rotate_right)
 #define _STDBIT_DEF_ROTATE_RIGHT_FN(ty, suffix)                                \

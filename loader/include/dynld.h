@@ -9,7 +9,7 @@ typedef void elf_init_t(char **, char **, auxv_t *);
 typedef void elf_fini_t(void);
 
 struct DynLibraryEntry {
-    void* dylib_base;
+    void *dylib_base;
     ElfNative_Dyn *dylib_dynamic_section;
     ElfNative_Phdr *dylib_phdrs;
     uint32_t dylib_dynamic_size;
@@ -31,15 +31,15 @@ struct DynLibraryEntry {
     enum Elf_DynTag dylib_jmprel_type;
     const char *dylib_strtab;
     size_t dylib_strsz;
-    Elf64_Addr* dylib_init_array;
-    Elf64_Addr* dylib_fini_array;
+    Elf64_Addr *dylib_init_array;
+    Elf64_Addr *dylib_fini_array;
     uint32_t dylib_init_array_size;
     uint32_t dylib_fini_array_size;
     const char *dylib_soname;
 };
 
-sysresult2_t dynld_link(void* base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
+sysresult2_t dynld_link(void *base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
                         size_t phnum, const char *file_name, bool no_relocate);
 
-
-sysresult2_t dynld_sym_value(const char* sym, const struct DynLibraryEntry** ent_out);
+sysresult2_t dynld_sym_value(const char *sym,
+                             const struct DynLibraryEntry **ent_out);

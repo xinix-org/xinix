@@ -291,8 +291,6 @@ enum Elf_DynTag : uint32_t {
 #define DT_HIPROC 0x7fffffff
 };
 
-
-
 typedef struct {
     Elf64_Sxword d_tag;
     union {
