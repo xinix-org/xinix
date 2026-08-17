@@ -327,8 +327,6 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 
 extern void init_context(kcontext_t *ctx);
 
-extern void init_cpu_feature_array(void);
-
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
                   void *base_addr) {
@@ -339,7 +337,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
-    init_cpu_feature_array();
 
     load_idt();
 
