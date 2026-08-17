@@ -16,6 +16,6 @@ jobs:
     - name: install-deps
       run: sudo apt-get install -y clang clang-format lld just xorriso
     - name: install rust
-      run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
+      run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
     - name: build
       run: just build
