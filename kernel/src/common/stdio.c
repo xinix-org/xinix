@@ -1,3 +1,4 @@
+#include "sysresult.h"
 #include <memory.h>
 #include <stdarg.h>
 #include <stdbit.h>
@@ -127,7 +128,7 @@ static long long read_int(int length, int extra, va_list vlist) {
     case INTMAX_LEN:
         return va_arg(vlist, intmax_t);
     case SIZE_LEN:
-        return va_arg(vlist, size_t);
+        return va_arg(vlist, ptrdiff_t);
     case PTRDIFF_LEN:
         return va_arg(vlist, ptrdiff_t);
     case MINWIDTH_LEN:
@@ -537,7 +538,31 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
                 bytes_printed = print_unsigned_int(val, -1, "0x", 2, UPPER_HEX, stream, flags | POUND_FLAG , min_width, 16);
             }
             break;
+        case 'r':
+            {
+                if(length_spec == NO_LEN)
+                    length_spec = LONG_LEN;
+                long long val = read_int(length_spec, length_extra, vlist);
+                const char* print;
+                if(flags & POUND_FLAG) {
+                    print = sysresult_name(val);
+                } else {
+                    print = sysresult_describe(val);
+                }
 
+                if (!print) {
+                    bytes_printed = print_unsigned_int(val, -1, "", 0, UPPER_HEX, stream, flags , min_width, 16);
+                } else {
+                    size_t len;
+                    if (precision == -1) {
+                        len = strlen(print);
+                    } else {
+                        len = strnlen(print, precision);
+                    }
+                    WRITE_CHECKED(stream, len, print, bytes_printed);
+                }
+            }
+            break;
         default:
             WRITE_CHECKED(stream, 4, "TODO", bytes_printed);
         }

@@ -2,13 +2,34 @@
 
 #include <stddef.h>
 
+#define SYSRESULT_DEF_ERROR_CONSTANT(name, const) ERR_##name = const,
 typedef enum : long {
-    ERR_GENERIC = -1,
-
-    ERR_IMAGE_VALIDATION_ERROR = -32,
-    ERR_IMAGE_WX_SEG = -36,
-    ERR_IMAGE_INVALID_RELOC = -37,
+#include <bits/errordef.h>
 } sysresult_t;
+#undef SYSRESULT_DEF_ERROR_CONSTANT
+
+#define SYSRESULT_DEF_ERROR_CONSTANT(name, const) case ERR_##name: return #name;
+
+inline static const char* sysresult_name(sysresult_t res) {
+    switch(res) {
+#include <bits/errordef.h>
+        default: return nullptr;
+    }
+}
+
+#undef SYSRESULT_DEF_ERROR_CONSTANT
+
+inline static const char* sysresult_describe(sysresult_t res) {
+    switch(res) {
+
+    case ERR_GENERIC: return "Unknown Error";
+    case ERR_IMAGE_VALIDATION_ERROR: return "Elf Image Not Valid For Target";
+    case ERR_IMAGE_WX_SEG: return "Elf Image Contains Writeable Text Segment";
+    case ERR_IMAGE_INVALID_RELOC: return "Unexpected Dynamic Relocation";
+    default:
+        return nullptr;
+    }
+}
 
 #if __has_include(<bits/sysresult2_def.h>)
 #include <bits/sysresult2_def.h>

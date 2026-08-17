@@ -301,7 +301,7 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
     if(irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 && (size_t)context->gregs[3] == DEBUG_MAGIC && (size_t)context->gregs[15] == DEBUG_MAGIC2) {
         printf("\r\n");
         printf("Debug Trap from %s (%X)\r\n", context->gregs[6], context->gregs[1]);
-        printf("Error Code %lX.\r\n", -(ptrdiff_t)context->gregs[7]);
+        printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
         printf("Function %s (%p)\r\n\r\n", context->gregs[2], context->gregs[0]);
     }
 
