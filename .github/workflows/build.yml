@@ -14,7 +14,7 @@ jobs:
     - name: update submodules
       run: git submodule update --init
     - name: install-deps
-      run: sudo apt-get install -y clang clang-format lld just xorriso
+      run: sudo apt-get install -y clang-21 clang-format-21 lld-21 just xorriso
     - name: install rust
       run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
     - name: build
