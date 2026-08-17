@@ -165,6 +165,7 @@ sysresult2_t dynld_link(void* base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
                 last_needed = dynent;
             break;
         case DT_PLTRELSZ:
+            ent.dylib_pltrelsz = dynent->d_val;
             break;
         case DT_PLTGOT:
             ent.dylib_pltgot = DYN_PTR(*dynent, union GotEntry);
@@ -457,4 +458,11 @@ sysresult2_t dynld_link(void* base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
     atomic_store_explicit(&dynld_state.header.dynld_lock_and_offset, ent_off, memory_order_release);
 
     return SYSRESULT2_OK(eref);
+}
+
+
+sysresult2_t dynld_sym_value(const char* sym, const struct DynLibraryEntry** ent_out) {
+
+
+    return SYSRESULT2_ERROR(-1);
 }

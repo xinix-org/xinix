@@ -26,14 +26,15 @@ struct DynLibraryEntry {
         ElfNative_Rel *dylib_plt_rel;
         ElfNative_Rela *dylib_plt_rela;
     };
+    size_t dylib_pltrelsz;
     enum Elf_DynTag dylib_hash_type;
     enum Elf_DynTag dylib_jmprel_type;
     const char *dylib_strtab;
     size_t dylib_strsz;
     Elf64_Addr* dylib_init_array;
-    size_t dylib_init_array_size;
     Elf64_Addr* dylib_fini_array;
-    size_t dylib_fini_array_size;
+    uint32_t dylib_init_array_size;
+    uint32_t dylib_fini_array_size;
     const char *dylib_soname;
 };
 

@@ -33,7 +33,7 @@ override LDFLAGS += \
 	--gc-sections \
 	--pack-dyn-relocs=relr \
 	-T $(LDSCRIPT) \
-	-z now \
+	-z now
 
 override LIBS = $(LOADER) $(EXTERNALS)/flanterm-build/target/flanterm.a
 

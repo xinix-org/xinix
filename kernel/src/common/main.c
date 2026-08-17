@@ -457,6 +457,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     clone_page_table();
 
+    printf("\r\n");
+
     // Set up the dynamic loader, finally
     // TODO: should happen way earlier. Currently only this late due to some bad
     // circular dependencies.
@@ -469,6 +471,28 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     if (SYSRESULT2_CODE(res) < 0)
         hcf(SYSRESULT2_CODE(res), CURRENT());
+
+    auto self = SYSRESULT2_VALUE(res, struct DynLibraryEntry*);
+    if(self->dylib_jmprel_type == DT_RELA && self->dylib_plt_rela) {
+        size_t count = self->dylib_pltrelsz / sizeof(ElfNative_Rela);
+        printf("Got extraneous relas\r\n");
+        for(auto ptr = self->dylib_plt_rela; ptr != (self->dylib_plt_rela) + count; ptr ++){
+            void* offset = ((char*)self->dylib_base) + ptr->r_offset;
+            ElfNative_Reloc relty = ELFNATIVE_R_TYPE(ptr->r_info);
+            size_t syme = ELFNATIVE_R_SYM(ptr->r_info);
+            const ElfNative_Sym* sym = &self->dylib_symtab[syme];
+            const char* name = self->dylib_strtab + sym->st_name;
+
+            const char* relname = rel_describe(relty);
+            if(relname) {
+                printf("\tRELA %s (%s + %#zx): %p\r\n", relname, name, ptr->r_addend, offset);
+            } else {
+                printf("\tRELA <unknown type %x> (%s + %#zx): %p\r\n", (unsigned int)relty, name, ptr->r_addend, offset);
+            }
+        }
+
+        printf("\r\n");
+    }
 
     load_system_descriptor_tables();
 
