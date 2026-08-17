@@ -111,8 +111,7 @@ loader_map_elf(const ElfNative_Ehdr *e_hdr, ElfNative_Dyn **dyn_out,
 
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp, void *(*aligned_alloc)(size_t align, size_t size),
-                void **alloc_ptr) {
+                void *rsdp, void *(*aligned_alloc)(size_t align, size_t size)) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;

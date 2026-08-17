@@ -49,9 +49,9 @@ static volatile uint64_t limine_requests_end_marker[] =
 /// FUNCTION PROTOTYPES ///
 
 [[noreturn]]
-extern void
-call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap, void *rsdp,
-           void *(*aligned_alloc)(size_t align, size_t size), void **alloc_ptr);
+extern void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
+                       void *rsdp,
+                       void *(*aligned_alloc)(size_t align, size_t size));
 
 [[noreturn]]
 extern void hcf(void);
@@ -150,5 +150,5 @@ void pkmain(void) {
                   .entries = entries};
 
     call_kmain(hhdm_request.response->offset, pfb, &map,
-               rsdp_request.response->address, aligned_bump_alloc, (void**)&alloc_pos);
+               rsdp_request.response->address, aligned_bump_alloc);
 }
