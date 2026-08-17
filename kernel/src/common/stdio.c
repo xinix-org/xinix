@@ -228,11 +228,123 @@ size_t write_rep(FILE *restrict stream, int count, const char *buf,
 
 static constexpr const char UPPER_HEX[16] = "0123456789ABCDEF";
 static constexpr const char LOWER_HEX[16] = "0123456789abcdef";
+static constexpr const char OCT[8] = "01234567";
+static constexpr const char BIN[2] = "01";
+
+
+static inline size_t print_unsigned_int(unsigned long long value, int precision, const char* prefix, size_t prefix_width, const char* alpha, FILE* restrict stream, int flags, int min_width, unsigned radix) {
+    size_t bytes_printed = 0;
+    const unsigned radix_bits = stdc_trailing_zeros(radix);
+    const unsigned long long mask = (1 << radix_bits) - 1;
+    char buffer[64] = {};
+    if (precision == -1) {
+        precision = 1;
+    }
+    int needed_precision =
+        sizeof(unsigned long long) * (8 / radix_bits) - stdc_leading_zeros(value) / 4;
+    if (needed_precision > precision) {
+        precision = needed_precision;
+    }
+    int effective_width =
+        (flags & POUND_FLAG) ? (precision + prefix_width) : precision;
+    if (precision <= 16) {
+        for (int idx = precision - 1; idx >= 0; idx--) {
+            buffer[idx] = alpha[value & mask];
+            value >>= radix_bits;
+        }
+        if (min_width <= effective_width) {
+            if (flags & POUND_FLAG) {
+                WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+            }
+            WRITE_CHECKED(stream, precision, buffer, bytes_printed);
+        } else {
+            int padding = min_width - effective_width;
+            if (flags & MINUS_FLAG) {
+                if (flags & POUND_FLAG) {
+                    WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+                }
+                WRITE_CHECKED(stream, precision, buffer, bytes_printed);
+                if (write_rep(stream, padding, SPACES,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+            } else if (flags & ZERO_FLAG) {
+                if (flags & POUND_FLAG) {
+                    WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+                }
+                if (write_rep(stream, padding, ZEROS, &bytes_printed)) {
+                    return bytes_printed;
+                }
+                WRITE_CHECKED(stream, precision, buffer, bytes_printed);
+            } else {
+                if (write_rep(stream, padding, SPACES,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+                if (flags & POUND_FLAG) {
+                    WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+                }
+                WRITE_CHECKED(stream, precision, buffer, bytes_printed);
+            }
+        }
+    } else {
+        const size_t buffersz = (63 + radix_bits) / radix_bits;
+        for (int idx = buffersz; idx >= 0; idx--) {
+            buffer[idx] = alpha[value & mask];
+            value >>= radix_bits;
+        }
+        size_t number_of_zeros = precision - 16;
+        if (min_width <= effective_width) {
+            if (write_rep(stream, number_of_zeros, ZEROS,
+                            &bytes_printed)) {
+                return bytes_printed;
+            }
+            WRITE_CHECKED(stream, buffersz, buffer, bytes_printed);
+        } else {
+            size_t padding = min_width - effective_width;
+            if (flags & MINUS_FLAG) {
+                if (flags & POUND_FLAG) {
+                    WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+                }
+                if (write_rep(stream, number_of_zeros, ZEROS,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+                WRITE_CHECKED(stream, buffersz, buffer, bytes_printed);
+                if (write_rep(stream, padding, SPACES,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+            } else if (flags & ZERO_FLAG) {
+                if (flags & POUND_FLAG) {
+                    WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+                }
+                if (write_rep(stream, number_of_zeros + padding, ZEROS,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+                WRITE_CHECKED(stream, buffersz, buffer, bytes_printed);
+            } else {
+                if (write_rep(stream, padding, SPACES,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+                if (flags & POUND_FLAG) {
+                    WRITE_CHECKED(stream, prefix_width, prefix, bytes_printed);
+                }
+                if (write_rep(stream, number_of_zeros, ZEROS,
+                                &bytes_printed)) {
+                    return bytes_printed;
+                }
+                WRITE_CHECKED(stream, buffersz, buffer, bytes_printed);
+            }
+        }
+    }
+}
 
 // Actual implementation
 int vfprintf(FILE *restrict stream, const char *restrict format,
              va_list vlist) {
-    char buffer[16] = {};
     size_t bytes_printed = 0;
     for (;;) {
         const char *cursor = format;
@@ -370,109 +482,38 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
         // and now, the actual printing
         switch (*cursor) {
         case 'X':
-            unsigned long long value =
-                read_unsigned_int(length_spec, length_extra, vlist);
-            if (precision == -1) {
-                precision = 1;
+            {
+                unsigned long long value =
+                    read_unsigned_int(length_spec, length_extra, vlist);
+                bytes_printed = print_unsigned_int(value, precision, "0X", 2, UPPER_HEX, stream, flags, min_width,16);
             }
-            int needed_precision =
-                sizeof(unsigned long long) * 2 - stdc_leading_zeros(value) / 4;
-            if (needed_precision > precision) {
-                precision = needed_precision;
+            break;
+        case 'x':
+            {
+                unsigned long long value =
+                    read_unsigned_int(length_spec, length_extra, vlist);
+                bytes_printed = print_unsigned_int(value, precision, "0x", 2, LOWER_HEX, stream, flags, min_width,16);
             }
-            int effective_width =
-                (flags & POUND_FLAG) ? (precision + 2) : precision;
-            if (precision <= 16) {
-                for (int idx = precision - 1; idx >= 0; idx--) {
-                    buffer[idx] = UPPER_HEX[value & 0xF];
-                    value >>= 4;
-                }
-                if (min_width <= effective_width) {
-                    if (flags & POUND_FLAG) {
-                        WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                    }
-                    WRITE_CHECKED(stream, precision, buffer, bytes_printed);
-                } else {
-                    int padding = min_width - effective_width;
-                    if (flags & MINUS_FLAG) {
-                        if (flags & POUND_FLAG) {
-                            WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                        }
-                        WRITE_CHECKED(stream, precision, buffer, bytes_printed);
-                        if (write_rep(stream, padding, SPACES,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                    } else if (flags & ZERO_FLAG) {
-                        if (flags & POUND_FLAG) {
-                            WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                        }
-                        if (write_rep(stream, padding, ZEROS, &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                        WRITE_CHECKED(stream, precision, buffer, bytes_printed);
-                    } else {
-                        if (write_rep(stream, padding, SPACES,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                        if (flags & POUND_FLAG) {
-                            WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                        }
-                        WRITE_CHECKED(stream, precision, buffer, bytes_printed);
-                    }
-                }
-            } else {
-                for (int idx = 15; idx >= 0; idx--) {
-                    buffer[idx] = UPPER_HEX[value & 0xF];
-                    value >>= 4;
-                }
-                size_t number_of_zeros = precision - 16;
-                if (min_width <= effective_width) {
-                    if (write_rep(stream, number_of_zeros, ZEROS,
-                                  &bytes_printed)) {
-                        return bytes_printed;
-                    }
-                    WRITE_CHECKED(stream, 16, buffer, bytes_printed);
-                } else {
-                    size_t padding = min_width - effective_width;
-                    if (flags & MINUS_FLAG) {
-                        if (flags & POUND_FLAG) {
-                            WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                        }
-                        if (write_rep(stream, number_of_zeros, ZEROS,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                        WRITE_CHECKED(stream, 16, buffer, bytes_printed);
-                        if (write_rep(stream, padding, SPACES,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                    } else if (flags & ZERO_FLAG) {
-                        if (flags & POUND_FLAG) {
-                            WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                        }
-                        if (write_rep(stream, number_of_zeros + padding, ZEROS,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                        WRITE_CHECKED(stream, 16, buffer, bytes_printed);
-                    } else {
-                        if (write_rep(stream, padding, SPACES,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                        if (flags & POUND_FLAG) {
-                            WRITE_CHECKED(stream, 2, "0x", bytes_printed);
-                        }
-                        if (write_rep(stream, number_of_zeros, ZEROS,
-                                      &bytes_printed)) {
-                            return bytes_printed;
-                        }
-                        WRITE_CHECKED(stream, 16, buffer, bytes_printed);
-                    }
-                }
+            break;
+        case 'b':
+            {
+                unsigned long long value =
+                    read_unsigned_int(length_spec, length_extra, vlist);
+                bytes_printed = print_unsigned_int(value, precision, "0b", 2, BIN, stream, flags, min_width,2);
+            }
+            break;
+        case 'B':
+            {
+                unsigned long long value =
+                    read_unsigned_int(length_spec, length_extra, vlist);
+                bytes_printed = print_unsigned_int(value, precision, "0B", 2, BIN, stream, flags, min_width,2);
+            }
+            break;
+        case 'o':
+            {
+                unsigned long long value =
+                    read_unsigned_int(length_spec, length_extra, vlist);
+                bytes_printed = print_unsigned_int(value, precision, "0", 1, OCT, stream, flags, min_width,2);
             }
             break;
         case 's':
@@ -493,19 +534,7 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
                 WRITE_CHECKED(stream, 6, "(null)", bytes_printed);
             else {
                 uintptr_t val = (uintptr_t)ptr;
-                char buf[sizeof(uintptr_t) * 2 + 2] = {};
-                char *const bufend = &buf[sizeof(buf)];
-                char *pos = bufend;
-                while (val != 0) {
-                    *--pos = LOWER_HEX[val & 0xF];
-                    val >>= 4;
-                }
-
-                *--pos = 'x';
-                *--pos = '0';
-
-                size_t len = bufend - pos;
-                WRITE_CHECKED(stream, len, pos, bytes_printed);
+                bytes_printed = print_unsigned_int(val, -1, "0x", 2, UPPER_HEX, stream, flags | POUND_FLAG , min_width, 16);
             }
             break;
 
