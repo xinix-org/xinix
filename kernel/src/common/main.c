@@ -14,19 +14,13 @@
 
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
+#include <auxfuncs.h>
+#include <location.h>
 
 [[gnu::section(".interp")]]
 const char __interp[16] = "/xinix-kernel.so";
 
 extern ElfNative_Dyn _DYNAMIC[];
-
-[[noreturn]]
-static void hcf(void) {
-    __asm__ volatile("int3"); // Trigger a debug trap
-    for (;;) {
-        __asm__ volatile("hlt");
-    }
-}
 
 static union auxval_t __auxent[128 - 2];
 
@@ -304,6 +298,13 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
 
     print_ucontext(context);
 
+    if(irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 && (size_t)context->gregs[3] == DEBUG_MAGIC && (size_t)context->gregs[15] == DEBUG_MAGIC2) {
+        printf("\r\n");
+        printf("Debug Trap from %s (%X)\r\n", context->gregs[6], context->gregs[1]);
+        printf("Error Code %lX.\r\n", -(ptrdiff_t)context->gregs[7]);
+        printf("Function %s (%p)\r\n\r\n", context->gregs[2], context->gregs[0]);
+    }
+
     if (irq == 0x20) {
         context->gregs[0] = "Hello from Beyond the Interrupt!";
     }
@@ -417,12 +418,12 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
     if (!ctx) {
         printf("Error allocating initial core kcontext\r\n");
-        hcf();
+        hcf(ERR_GENERIC, CURRENT());
     }
     ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
     if (!tctx) {
         printf("Error allocating initial kernel thread context");
-        hcf();
+        hcf(ERR_GENERIC, CURRENT());
     }
     memset(tctx, 0, sizeof(ucontext_t));
     // tctx->xsave_size = FXSAVE_SIZE; // Uncomment when we turn on cr4.fxsr
@@ -464,12 +465,12 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
     size_t phnum = ehdr->e_phnum;
 
-    auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
+    auto res = dynld_link(base_addr, _DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
 
     if (SYSRESULT2_CODE(res) < 0)
-        hcf();
+        hcf(SYSRESULT2_CODE(res), CURRENT());
 
     load_system_descriptor_tables();
 
-    hcf();
+    hcf(0, CURRENT());
 }

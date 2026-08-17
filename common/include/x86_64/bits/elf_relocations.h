@@ -51,3 +51,5 @@ enum X86_64_Reloc : uint32_t {
 #define DREL_TLSDESC R_X86_64_TLSDESC
 #define DREL_DTPMOD R_X86_64_DTPMOD64
 #define DREL_DTPOFF R_X86_64_DTPMOD64
+
+typedef enum X86_64_Reloc ElfNative_Reloc;

@@ -57,17 +57,17 @@ static inline long elf_validate_ident(const Elf_Ident *_e_ident,
         _e_ident->ei_magic[1] != ELFMAGIC[1] ||
         _e_ident->ei_magic[2] != ELFMAGIC[2] ||
         _e_ident->ei_magic[3] != ELFMAGIC[3])
-        return -16;
+        return -32;
     else if (_e_ident->ei_class != req_class || _e_ident->ei_data != req_data)
-        return -17;
+        return -32;
     else if (_e_ident->ei_version != EV_CURRENT)
-        return -18;
+        return -32;
     else if (_e_ident->ei_osabi != ELFOSABINONE || _e_ident->ei_osabi != supabi)
-        return -19;
+        return -32;
     else
         for (size_t n = 0; n < sizeof(_e_ident->ei_pad); n++)
             if (_e_ident->ei_pad[n] != 0)
-                return -20;
+                return -32;
 
     return 0;
 }
@@ -152,7 +152,7 @@ enum Elf_SymBind : uint8_t {
     STB_HIPROC = 0xF,
 };
 
-enum ELf_SymType : uint8_t {
+enum Elf_SymType : uint8_t {
     STT_NOTYPE = 0,
     STT_OBJECT = 1,
     STT_FUNCTION = 2,
@@ -276,15 +276,22 @@ enum Elf_DynTag : uint32_t {
     DT_FINI_ARRAYSZ = 28,
     DT_RUNPATH = 29,
     DT_FLAGS = 30,
-    DT_ENCODING = 32,
+#define DT_ENCODING 32
     DT_PREINIT_ARRAY = 32,
     DT_PREINIT_ARRAYSZ = 33,
-    DT_LOOS = 0x6000000D,
-    DT_HIOS = 0x6ffff000,
+
+    DT_RELRSZ = 35,
+    DT_RELR = 36,
+    DT_RELRENT = 37,
+    DT_SYMTABSZ = 39,
+#define DT_LOOS 0x6000000D
+#define DT_HIOS 0x6ffff000
     DT_GNU_HASH = 0x6ffffef5,
-    DT_LOPROC = 0x70000000,
-    DT_HIPROC = 0x7fffffff,
+#define DT_LOPROC 0x70000000
+#define DT_HIPROC 0x7fffffff
 };
+
+
 
 typedef struct {
     Elf64_Sxword d_tag;
@@ -301,4 +308,9 @@ typedef Elf64_Phdr ElfNative_Phdr;
 typedef Elf64_Sym ElfNative_Sym;
 typedef Elf64_Rela ElfNative_Rela;
 typedef Elf64_Rel ElfNative_Rel;
+typedef Elf64_Addr ElfNative_Addr;
+typedef Elf64_Sxword ElfNative_Offset;
+
+#define ELFNATIVE_R_SYM(i) ELF64_R_SYM(i)
+#define ELFNATIVE_R_TYPE(i) (ElfNative_Reloc)(ELF64_R_TYPE(i))
 #endif

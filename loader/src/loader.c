@@ -28,13 +28,13 @@ sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
         elf_validate_ident_native(&e_hdr->e_ident, ELFOSABINONE));
 
     if (e_hdr->e_machine != EM_NATIVE)
-        return SYSRESULT2_ERROR(ERR_GENERIC);
+        return SYSRESULT2_ERROR(ERR_IMAGE_VALIDATION_ERROR);
 
     if (e_hdr->e_type != ET_DYN)
-        return SYSRESULT2_ERROR(ERR_GENERIC);
+        return SYSRESULT2_ERROR(ERR_IMAGE_VALIDATION_ERROR);
 
     if (e_hdr->e_phnum != sizeof(ElfNative_Phdr))
-        return SYSRESULT2_ERROR(ERR_GENERIC);
+        return SYSRESULT2_ERROR(ERR_IMAGE_VALIDATION_ERROR);
 
     ElfNative_Phdr *phdrs =
         (ElfNative_Phdr *)((char *)e_hdr) + (e_hdr->e_phoff);
@@ -76,7 +76,7 @@ sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
         if (pos->p_flags & PF_X)
             _flags |= PROT_EXEC;
 
-        auto base_rpa = pos->p_paddr & !4095;
+        auto base_rpa = pos->p_paddr & ~4095;
         auto end_rpa = pos->p_paddr + pos->p_memsz;
 
         size_t total_len = ((end_rpa - base_rpa) + 4095) >> 12;
