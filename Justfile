@@ -33,3 +33,6 @@ debug: build
 
 format:
     find . -path './externals' -prune -o \( -name '*.c' -o -name '*.h' \) -print -exec clang-format -i {} \;
+
+format-check:
+    find . -path './externals' -prune -o \( -name '*.c' -o -name '*.h' \) -print \( -exec clang-format -Werror --dry-run -i {} \;  -o -quit \)
