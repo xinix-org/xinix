@@ -180,6 +180,7 @@ sysresult2_t dynld_link(void* base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
             break;
         case DT_SYMTAB:
             ent.dylib_symtab = DYN_PTR(*dynent, ElfNative_Sym);
+            break;
         case DT_RELA:
             if(no_relocate)
                 return SYSRESULT2_ERROR(ERR_IMAGE_INVALID_RELOC);
@@ -244,8 +245,7 @@ sysresult2_t dynld_link(void* base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
         case DT_TEXTREL:
             return SYSRESULT2_ERROR(ERR_IMAGE_WX_SEG);
         case DT_JMPREL:
-            if(no_relocate)
-                return SYSRESULT2_ERROR(ERR_IMAGE_INVALID_RELOC);
+            ent.dylib_plt_rel = DYN_PTR(*dynent, ElfNative_Rel);
             break;
         case DT_BIND_NOW:
             bind_now = true;

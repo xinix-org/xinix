@@ -33,6 +33,18 @@ SECTIONS
         *(.rodata.*)
     }
 
+    .relr.dyn : {
+        *(.relr.dyn)
+    }
+
+    .rela.dyn : {
+        *(.rela.dyn)
+    }
+
+    .rela.plt : {
+        *(.rela.pt)
+    }
+
     . = ALIGN(4096);
 
     .got : {

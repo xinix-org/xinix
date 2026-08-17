@@ -32,7 +32,8 @@ override LDFLAGS += \
 	-z max-page-size=0x1000 \
 	--gc-sections \
 	--pack-dyn-relocs=relr \
-	-T $(LDSCRIPT)
+	-T $(LDSCRIPT) \
+	-z now \
 
 override LIBS = $(LOADER) $(EXTERNALS)/flanterm-build/target/flanterm.a
 
