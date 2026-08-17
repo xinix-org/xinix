@@ -1,17 +1,16 @@
 
-#include <cmp.h>
-#include <pointers.h>
 #include <auxv.h>
+#include <cmp.h>
 #include <cpuid.h>
 #include <elf.h>
 #include <framebuffer.h>
+#include <hcf.h>
 #include <memmap.h>
+#include <pointers.h>
 #include <random.h>
 #include <stddef.h>
-#include <vmap.h>
 #include <sysresult.h>
-#include <hcf.h>
-
+#include <vmap.h>
 
 typedef void kmain_t(int argc, char *argv[], char *envp[], auxv_t auxv[]);
 
@@ -21,9 +20,10 @@ extern ElfNative_Ehdr _binary_target_xinix_kernel_so_start;
 
 uintptr_t hhdm_offset;
 
-static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
-                            ElfNative_Dyn **dyn_out,
-                            ElfNative_Phdr **phdr_out, void*(*aligned_alloc)(size_t align, size_t sz)) {
+static sysresult2_t
+loader_map_elf(const ElfNative_Ehdr *e_hdr, ElfNative_Dyn **dyn_out,
+               ElfNative_Phdr **phdr_out,
+               void *(*aligned_alloc)(size_t align, size_t sz)) {
     SYSRESULT_TRY_SYSRESULT2(
         elf_validate_ident_native(&e_hdr->e_ident, ELFOSABINONE));
 
@@ -62,7 +62,7 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
     }
 
     void *root = aligned_alloc(4096, (last_rpa + 4095) & ~4095);
-    if(!root)
+    if (!root)
         return SYSRESULT2_ERROR(ERR_GENERIC);
 
     for (auto *pos = phdrs; pos != phdrs_end; pos++) {
@@ -109,25 +109,37 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
     return SYSRESULT2_OK(root);
 }
 
-
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp, void *(*aligned_alloc)(size_t, size_t)) {
+                void *rsdp, void *(*aligned_alloc)(size_t align, size_t size),
+                void **alloc_ptr) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;
 
-    auto res = loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr, nullptr, aligned_alloc);
+    auto res = loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr,
+                              nullptr, aligned_alloc);
 
-    if(SYSRESULT2_CODE(res) < 0)
+    if (SYSRESULT2_CODE(res) < 0)
         hcf();
 
-    uintptr_t root = SYSRESULT2_VALUE(res, uintptr_t); 
-    
+    uintptr_t root = SYSRESULT2_VALUE(res, uintptr_t);
+    // XXX: Dirty hack to reserve the block of memory the executable uses.
+    // Should be made into MEMMAP_EXECUTABLE_AND_MODULES later.
+    for (int i = 0; i < memmap->entry_count; i++) {
+        if (memmap->entries[i].type == MEMMAP_PREKERNEL_RESERVED) {
+            // assume prekernel only reserved one block
+            // and just block out a metric ton of memory
+            memmap->entries[i].length += 0x1000000;
+            memmap->entries[i + 1].base += 0x1000000;
+            memmap->entries[i + 1].length -= 0x1000000;
+            break;
+        }
+    }
 
     ptrdiff_t offset = _binary_target_xinix_kernel_so_start.e_entry;
 
-    kmain_t* kmain = (kmain_t*)(root + offset);
+    kmain_t *kmain = (kmain_t *)(root + offset);
 
     char *argv[] = {"kernel", 0};
     int argc = 1;

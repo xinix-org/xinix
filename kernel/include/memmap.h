@@ -13,7 +13,7 @@
 #define MEMMAP_EXECUTABLE_AND_MODULES 6
 #define MEMMAP_FRAMEBUFFER 7
 #define MEMMAP_RESERVED_MAPPED 8
-#define MEMMAP_PREKERNEL_RECLAIMABLE 9
+#define MEMMAP_PREKERNEL_RESERVED 9
 
 static const char *memmap_type_name(uint64_t type) {
     switch (type) {
@@ -35,8 +35,8 @@ static const char *memmap_type_name(uint64_t type) {
         return "MEMMAP_FRAMEBUFFER";
     case MEMMAP_RESERVED_MAPPED:
         return "MEMMAP_RESERVED_MAPPED";
-    case MEMMAP_PREKERNEL_RECLAIMABLE:
-        return "MEMMAP_PREKERNEL_RECLAIMABLE";
+    case MEMMAP_PREKERNEL_RESERVED:
+        return "MEMMAP_PREKERNEL_RESERVED";
     default:
         return "<unknown>";
     }

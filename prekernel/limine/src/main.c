@@ -1,4 +1,3 @@
-#include "random.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -50,8 +49,9 @@ static volatile uint64_t limine_requests_end_marker[] =
 /// FUNCTION PROTOTYPES ///
 
 [[noreturn]]
-extern void call_kmain(size_t hhdm_offset, framebuffer *fb, memmap *memmap,
-                       void *rsdp, void *(*aligned_alloc)(size_t, size_t));
+extern void
+call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap, void *rsdp,
+           void *(*aligned_alloc)(size_t align, size_t size), void **alloc_ptr);
 
 [[noreturn]]
 extern void hcf(void);
@@ -135,7 +135,7 @@ void pkmain(void) {
         if (entry->base == (size_t)start_of_claim) {
             entries[i] = (memmap_entry){.base = entry->base,
                                         .length = alloc_size,
-                                        .type = MEMMAP_PREKERNEL_RECLAIMABLE};
+                                        .type = MEMMAP_PREKERNEL_RESERVED};
             entries[i + 1] =
                 (memmap_entry){.base = alloc_pos_aligned,
                                .length = entry->length - alloc_size,
@@ -150,5 +150,5 @@ void pkmain(void) {
                   .entries = entries};
 
     call_kmain(hhdm_request.response->offset, pfb, &map,
-               rsdp_request.response->address, aligned_bump_alloc);
+               rsdp_request.response->address, aligned_bump_alloc, (void**)&alloc_pos);
 }

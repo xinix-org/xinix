@@ -165,8 +165,8 @@ IsrStub 21 1
 
 .hidden isr_list
 .global isr_list
-isr_list:
 .align 8
+isr_list:
 .set i,0
 .rept 256
   IsrListEntry %i

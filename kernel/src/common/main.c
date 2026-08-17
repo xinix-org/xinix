@@ -259,34 +259,36 @@ enum exception_id : int {
     EXCEPT_SC = 30,
 };
 
-#define EXCEPTION_NAME_ID(name) case EXCEPT_##name: return #name
+#define EXCEPTION_NAME_ID(name)                                                \
+    case EXCEPT_##name:                                                        \
+        return #name
 
-const char* exception_name(enum exception_id id) {
-    switch(id) {
-    EXCEPTION_NAME_ID(DE);
-    EXCEPTION_NAME_ID(DB);
-    EXCEPTION_NAME_ID(NMI);
-    EXCEPTION_NAME_ID(BP);
-    EXCEPTION_NAME_ID(OF);
-    EXCEPTION_NAME_ID(BR);
-    EXCEPTION_NAME_ID(UD);
-    EXCEPTION_NAME_ID(NM);
-    EXCEPTION_NAME_ID(MP);
-    EXCEPTION_NAME_ID(DF);
-    EXCEPTION_NAME_ID(TS);
-    EXCEPTION_NAME_ID(NP);
-    EXCEPTION_NAME_ID(SS);
-    EXCEPTION_NAME_ID(GP);
-    EXCEPTION_NAME_ID(PF);
-    EXCEPTION_NAME_ID(MF);
-    EXCEPTION_NAME_ID(AC);
-    EXCEPTION_NAME_ID(MC);
-    EXCEPTION_NAME_ID(XM);
-    EXCEPTION_NAME_ID(VE);
-    EXCEPTION_NAME_ID(CP);
-    EXCEPTION_NAME_ID(HV);
-    EXCEPTION_NAME_ID(VC);
-    EXCEPTION_NAME_ID(SC);
+const char *exception_name(enum exception_id id) {
+    switch (id) {
+        EXCEPTION_NAME_ID(DE);
+        EXCEPTION_NAME_ID(DB);
+        EXCEPTION_NAME_ID(NMI);
+        EXCEPTION_NAME_ID(BP);
+        EXCEPTION_NAME_ID(OF);
+        EXCEPTION_NAME_ID(BR);
+        EXCEPTION_NAME_ID(UD);
+        EXCEPTION_NAME_ID(NM);
+        EXCEPTION_NAME_ID(MP);
+        EXCEPTION_NAME_ID(DF);
+        EXCEPTION_NAME_ID(TS);
+        EXCEPTION_NAME_ID(NP);
+        EXCEPTION_NAME_ID(SS);
+        EXCEPTION_NAME_ID(GP);
+        EXCEPTION_NAME_ID(PF);
+        EXCEPTION_NAME_ID(MF);
+        EXCEPTION_NAME_ID(AC);
+        EXCEPTION_NAME_ID(MC);
+        EXCEPTION_NAME_ID(XM);
+        EXCEPTION_NAME_ID(VE);
+        EXCEPTION_NAME_ID(CP);
+        EXCEPTION_NAME_ID(HV);
+        EXCEPTION_NAME_ID(VC);
+        EXCEPTION_NAME_ID(SC);
     default:
         return nullptr;
     }
@@ -294,8 +296,8 @@ const char* exception_name(enum exception_id id) {
 
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
-    const char* name = exception_name(irq);
-    if(name)
+    const char *name = exception_name(irq);
+    if (name)
         printf("Got Exception #%s\r\n", name);
     else
         printf("Got Interrupt %X)\r\n", irq);
@@ -311,8 +313,8 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
 
 [[gnu::used]]
 ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
-    const char* name = exception_name(irq);
-    if(name)
+    const char *name = exception_name(irq);
+    if (name)
         printf("Got Exception #%s (err code %lX)\r\n", name, errcode);
     else
         printf("Got Interrupt %X (err code %lX)\r\n", irq, errcode);
@@ -329,25 +331,17 @@ extern void init_cpu_feature_array(void);
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
                   void *base_addr) {
-
-    framebuffer *fb;
-
     for (auxv_t *auxv_ent = auxv; auxv_ent->a_type != AT_NULL; auxv_ent++) {
         if (auxv_ent->a_type != AT_IGNORE)
             __auxent[auxv_ent->a_type - 2] = auxv_ent->a_un;
     }
 
+    framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
+
     init_cpu_feature_array();
 
     load_idt();
 
-    Elf64_Ehdr *ehdr = base_addr;
-
-    Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
-    size_t phnum = ehdr->e_phnum;
-
-    fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
-    
     load_gdt();
 
     video_mode *fb_mode = fb->modes[0];
@@ -393,11 +387,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     stdout->data = ft_ctx;
     stdout->write = stdout_handler;
 
-    auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
-
-    if (SYSRESULT2_CODE(res) < 0)
-        hcf();
-
     init_heap();
 
     const char msg[] =
@@ -407,8 +396,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     char *alloc_test = malloc(40);
     memcpy(alloc_test, "Did malloc work?\r\nOf course it did :D\r\n", 40);
     flanterm_write(ft_ctx, alloc_test, 40);
-
-    
 
     printf("Address of printf is %#.16llX\r\n\r\n", printf);
 
@@ -468,6 +455,19 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     printf("\r\n");
 
     clone_page_table();
+
+    // Set up the dynamic loader, finally
+    // TODO: should happen way earlier. Currently only this late due to some bad
+    // circular dependencies.
+    Elf64_Ehdr *ehdr = base_addr;
+
+    Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
+    size_t phnum = ehdr->e_phnum;
+
+    auto res = dynld_link(_DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
+
+    if (SYSRESULT2_CODE(res) < 0)
+        hcf();
 
     load_system_descriptor_tables();
 
