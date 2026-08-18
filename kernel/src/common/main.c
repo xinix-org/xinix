@@ -537,9 +537,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         unsigned long long r[16/sizeof(unsigned long long)];
     } rand_bytes = {};
 
-    const uint64_t* randnums = (const uint64_t*) at_rand;
-    printf("AT_RANDOM: %.16llX:%.16llX\r\n", randnums[0], randnums[1]);
-
     random_kglobal_gen(rand_bytes.buf);
 
     printf("KContext Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0], rand_bytes.r[1]);

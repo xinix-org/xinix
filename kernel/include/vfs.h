@@ -1,0 +1,23 @@
+#pragma once
+
+#include "sysresult.h"
+#include <vtable.h>
+#include <stdint.h>
+#include <strslice.h>
+#include <uuid.h>
+
+typedef uint64_t object_t;
+typedef uint32_t stream_t;
+
+struct VfsData;
+
+typedef struct VfsVtable {
+    struct VtableCommon vcommon;
+    uuid (*vfs_uuid)(struct VfsData* vfs_data);
+    object_t (*vfs_root_obj)(struct VfsData* vfs_data);
+    stream_t (*vfs_find_stream)(struct VfsData* vfs_data, object_t vfs_obj, string_t vfs_stream_name);
+    object_t (*vfs_search)(struct VfsData* vfs_data, object_t vfs_obj, stream_t vfs_stream, string_t vfs_file_name);
+    sysresult2_t (*vfs_read)(struct VfsData* vfs_data, object_t vfs_obj, stream_t vfs_stream, void* vfs_rdata, size_t vfs_size);
+    sysresult2_t (*vfs_write)(struct VfsData* vfs_data, object_t vfs_obj, stream_t vfs_stream, const void* vfs_rdata, size_t vfs_size)
+} vfs_vtable_t;
+
