@@ -11,7 +11,9 @@ override CFLAGS += \
 	-fno-stack-protector \
 	-mno-sse \
 	-mno-red-zone \
-	--target=x86_64-unknown-none-elf
+	--target=x86_64-unknown-none-elf \
+	-fpic \
+	-fvisibility=hidden
 
 override CPPFLAGS += \
 	-I include \

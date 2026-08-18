@@ -1,22 +1,26 @@
-#include "context.h"
-#include "cpuid.h"
+#include "sysresult.h"
 #include <acpi.h>
 #include <auxv.h>
+#include <context.h>
+#include <cpuid.h>
+#include <dynld.h>
+#include <elf.h>
 #include <framebuffer.h>
+#include <loader.h>
 #include <memmap.h>
 #include <memory.h>
 #include <paging.h>
 #include <stdio.h>
 
+#include <auxfuncs.h>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
+#include <location.h>
 
-[[noreturn]]
-static void hcf(void) {
-    for (;;) {
-        __asm__ volatile("hlt");
-    }
-}
+[[gnu::section(".interp")]]
+const char __interp[16] = "/xinix-kernel.so";
+
+extern ElfNative_Dyn _DYNAMIC[];
 
 static union auxval_t __auxent[128 - 2];
 
@@ -106,9 +110,11 @@ typedef struct GDT_Descriptor {
 
 void load_idt() {
     for (int i = 0; i < 256; i++) {
-        IDT.entries[i].offset_low = isr_list[i] & 0xFFFF;
-        IDT.entries[i].offset_mid = (isr_list[i] >> 16) & 0xFFFF;
-        IDT.entries[i].offset_high = isr_list[i] >> 32;
+        ptrdiff_t offset = isr_list[i];
+        uintptr_t ptr = ((uintptr_t)&isr_list) + offset;
+        IDT.entries[i].offset_low = ptr & 0xFFFF;
+        IDT.entries[i].offset_mid = (ptr >> 16) & 0xFFFF;
+        IDT.entries[i].offset_high = ptr >> 32;
     }
     idt_descriptor_t descriptor = {
         .limit = 255 * 16,
@@ -220,11 +226,88 @@ void print_ucontext(const ucontext_t *context) {
            context->sregs[3]);
 }
 
+enum exception_id : int {
+    EXCEPT_DE = 0,
+    EXCEPT_DB = 1,
+    EXCEPT_NMI = 2,
+    EXCEPT_BP = 3,
+    EXCEPT_OF = 4,
+    EXCEPT_BR = 5,
+    EXCEPT_UD = 6,
+    EXCEPT_NM = 7,
+    EXCEPT_DF = 8,
+    EXCEPT_MP = 9,
+    EXCEPT_TS = 10,
+    EXCEPT_NP = 11,
+    EXCEPT_SS = 12,
+    EXCEPT_GP = 13,
+    EXCEPT_PF = 14,
+    EXCEPT_MF = 16,
+    EXCEPT_AC = 17,
+    EXCEPT_MC = 18,
+    EXCEPT_XM = 19,
+    EXCEPT_VE = 20,
+    EXCEPT_CP = 21,
+    EXCEPT_HV = 28,
+    EXCEPT_VC = 29,
+    EXCEPT_SC = 30,
+};
+
+#define EXCEPTION_NAME_ID(name)                                                \
+    case EXCEPT_##name:                                                        \
+        return #name
+
+const char *exception_name(enum exception_id id) {
+    switch (id) {
+        EXCEPTION_NAME_ID(DE);
+        EXCEPTION_NAME_ID(DB);
+        EXCEPTION_NAME_ID(NMI);
+        EXCEPTION_NAME_ID(BP);
+        EXCEPTION_NAME_ID(OF);
+        EXCEPTION_NAME_ID(BR);
+        EXCEPTION_NAME_ID(UD);
+        EXCEPTION_NAME_ID(NM);
+        EXCEPTION_NAME_ID(MP);
+        EXCEPTION_NAME_ID(DF);
+        EXCEPTION_NAME_ID(TS);
+        EXCEPTION_NAME_ID(NP);
+        EXCEPTION_NAME_ID(SS);
+        EXCEPTION_NAME_ID(GP);
+        EXCEPTION_NAME_ID(PF);
+        EXCEPTION_NAME_ID(MF);
+        EXCEPTION_NAME_ID(AC);
+        EXCEPTION_NAME_ID(MC);
+        EXCEPTION_NAME_ID(XM);
+        EXCEPTION_NAME_ID(VE);
+        EXCEPTION_NAME_ID(CP);
+        EXCEPTION_NAME_ID(HV);
+        EXCEPTION_NAME_ID(VC);
+        EXCEPTION_NAME_ID(SC);
+    default:
+        return nullptr;
+    }
+}
+
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
-    printf("Got Interrupt %X\r\n", irq);
+    const char *name = exception_name(irq);
+    if (name)
+        printf("Got Exception #%s\r\n", name);
+    else
+        printf("Got Interrupt %X)\r\n", irq);
 
     print_ucontext(context);
+
+    if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 &&
+        (size_t)context->gregs[3] == DEBUG_MAGIC &&
+        (size_t)context->gregs[15] == DEBUG_MAGIC2) {
+        printf("\r\n");
+        printf("Debug Trap from %s (%X)\r\n", context->gregs[6],
+               context->gregs[1]);
+        printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
+        printf("Function %s (%p)\r\n\r\n", context->gregs[2],
+               context->gregs[0]);
+    }
 
     if (irq == 0x20) {
         context->gregs[0] = "Hello from Beyond the Interrupt!";
@@ -235,7 +318,11 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
 
 [[gnu::used]]
 ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
-    printf("Got Interrupt %X (err code %lX)\r\n", irq, errcode);
+    const char *name = exception_name(irq);
+    if (name)
+        printf("Got Exception #%s (err code %lX)\r\n", name, errcode);
+    else
+        printf("Got Interrupt %X (err code %lX)\r\n", irq, errcode);
 
     print_ucontext(context);
 
@@ -245,19 +332,18 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 extern void init_context(kcontext_t *ctx);
 
 [[noreturn]]
-extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
-    framebuffer *fb;
-
+extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
+                  void *base_addr) {
     for (auxv_t *auxv_ent = auxv; auxv_ent->a_type != AT_NULL; auxv_ent++) {
         if (auxv_ent->a_type != AT_IGNORE)
             __auxent[auxv_ent->a_type - 2] = auxv_ent->a_un;
     }
 
-    fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
+    framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
     load_idt();
+
     load_gdt();
-    init_heap();
 
     video_mode *fb_mode = fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
@@ -296,6 +382,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     );
     // clang-format on
 
+    FILE stdout_fd = (FILE){};
+
+    stdout = &stdout_fd;
+    stdout->data = ft_ctx;
+    stdout->write = stdout_handler;
+
+    init_heap();
+
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";
     flanterm_write(ft_ctx, msg, sizeof(msg));
@@ -303,10 +397,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     char *alloc_test = malloc(40);
     memcpy(alloc_test, "Did malloc work?\r\nOf course it did :D\r\n", 40);
     flanterm_write(ft_ctx, alloc_test, 40);
-
-    stdout = calloc(1, sizeof(FILE));
-    stdout->data = ft_ctx;
-    stdout->write = stdout_handler;
 
     printf("Address of printf is %#.16llX\r\n\r\n", printf);
 
@@ -328,12 +418,12 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
     kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
     if (!ctx) {
         printf("Error allocating initial core kcontext\r\n");
-        hcf();
+        hcf(ERR_GENERIC, CURRENT());
     }
     ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
     if (!tctx) {
         printf("Error allocating initial kernel thread context");
-        hcf();
+        hcf(ERR_GENERIC, CURRENT());
     }
     memset(tctx, 0, sizeof(ucontext_t));
     // tctx->xsave_size = FXSAVE_SIZE; // Uncomment when we turn on cr4.fxsr
@@ -367,7 +457,48 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[]) {
 
     clone_page_table();
 
+    printf("\r\n");
+
+    // Set up the dynamic loader, finally
+    // TODO: should happen way earlier. Currently only this late due to some bad
+    // circular dependencies.
+    Elf64_Ehdr *ehdr = base_addr;
+
+    Elf64_Phdr *phdrs = (Elf64_Phdr *)(((uintptr_t)base_addr) + ehdr->e_phoff);
+    size_t phnum = ehdr->e_phnum;
+
+    auto res =
+        dynld_link(base_addr, _DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
+
+    if (SYSRESULT2_CODE(res) < 0)
+        hcf(SYSRESULT2_CODE(res), CURRENT());
+
+    auto self = SYSRESULT2_VALUE(res, struct DynLibraryEntry *);
+    if (self->dylib_jmprel_type == DT_RELA && self->dylib_plt_rela) {
+        size_t count = self->dylib_pltrelsz / sizeof(ElfNative_Rela);
+        printf("Got extraneous relas\r\n");
+        for (auto ptr = self->dylib_plt_rela;
+             ptr != (self->dylib_plt_rela) + count; ptr++) {
+            void *offset = ((char *)self->dylib_base) + ptr->r_offset;
+            ElfNative_Reloc relty = ELFNATIVE_R_TYPE(ptr->r_info);
+            size_t syme = ELFNATIVE_R_SYM(ptr->r_info);
+            const ElfNative_Sym *sym = &self->dylib_symtab[syme];
+            const char *name = self->dylib_strtab + sym->st_name;
+
+            const char *relname = rel_describe(relty);
+            if (relname) {
+                printf("\tRELA %s (%s + %#zx): %p\r\n", relname, name,
+                       ptr->r_addend, offset);
+            } else {
+                printf("\tRELA <unknown type %x> (%s + %#zx): %p\r\n",
+                       (unsigned int)relty, name, ptr->r_addend, offset);
+            }
+        }
+
+        printf("\r\n");
+    }
+
     load_system_descriptor_tables();
 
-    hcf();
+    hcf(0, CURRENT());
 }

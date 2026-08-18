@@ -2,6 +2,8 @@
 
 .PHONY: all clean
 
+LDSCRIPT := link-$(ARCH).ld
+
 override CFLAGS += \
 	-g \
 	-MMD \
@@ -11,24 +13,29 @@ override CFLAGS += \
 	-fno-stack-protector \
 	-mno-sse \
 	-mno-red-zone \
-	--target=x86_64-unknown-none-elf
+	--target=x86_64-unknown-none-elf \
+	-fpic \
+	-fvisibility=protected \
 
 override CPPFLAGS += \
 	-I include \
 	-I include/$(ARCH) \
 	-I ../common/include \
 	-I ../common/include/$(ARCH) \
-	-I $(EXTERNALS)/Flanterm/src
+	-I $(EXTERNALS)/Flanterm/src \
+	-I ../loader/include 
 
 override LDFLAGS += \
 	-m elf_x86_64 \
 	-nostdlib \
-	-static \
+	-shared \
 	-z max-page-size=0x1000 \
 	--gc-sections \
-	-T $(LDSCRIPT)
+	--pack-dyn-relocs=relr \
+	-T $(LDSCRIPT) \
+	-z now
 
-override LIBS = $(PREKERNEL) $(EXTERNALS)/flanterm-build/target/flanterm.a
+override LIBS = $(LOADER) $(EXTERNALS)/flanterm-build/target/flanterm.a
 
 CC := clang
 LD := ld.lld
@@ -38,7 +45,7 @@ srcfiles_c := $(patsubst src/%,%,$(shell find $(srcdirs) -type f -name '*.c'))
 srcfiles_asm := $(patsubst src/%,%,$(shell find $(srcdirs) -type f -name '*.s' ))
 objs := $(srcfiles_c:%.c=target/%.o) $(srcfiles_asm:%.s=target/%.o)
 depfiles := $(srcfiles_c:%.c=target/%.d) $(srcfiles_asm:%.s=target/%.d)
-output := target/kernel
+output := target/xinix-kernel.so
 
 all: $(output)
 
@@ -47,7 +54,7 @@ all: $(output)
 clean:
 	rm -rf target/*
 
-target/kernel: $(objs)
+target/xinix-kernel.so: $(objs)
 	$(LD) $(LDFLAGS) -o $@ $(objs) $(LIBS)
 
 target/%.o: src/%.c

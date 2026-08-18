@@ -1,6 +1,7 @@
 
 .intel_syntax noprefix
 
+.hidden getcontext, init_context
 .global getcontext, init_context
 
 getcontext:

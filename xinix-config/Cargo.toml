@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 sysname = { git = "https://github.com/chorman0773/uname.git", version = "0.1.0" }
 target-tuples = "0.16.1"
+tui = "0.19"
+crossterm = "0.25"

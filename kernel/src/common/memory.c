@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <vmap.h>
 
 // GCC and Clang reserve the right to generate calls to the following
 // 4 functions even if they are not directly called.
@@ -143,4 +144,11 @@ size_t strnlen(const char *str, size_t maxlen) {
         result += 1;
     }
     return result;
+}
+
+// STUBS, for now
+void *valloc(size_t _page_count, enum valloc_flags _flags) { return nullptr; }
+
+void *vprotect(void *_base, size_t _page_count, enum valloc_flags _prot_flags) {
+    return nullptr;
 }

@@ -2,6 +2,8 @@
 
 .PHONY: all clean
 
+LDSCRIPT := src/link-$(ARCH).ld
+
 override CFLAGS += \
 	-g \
 	-MMD \
@@ -19,15 +21,27 @@ override CPPFLAGS += \
 	-I ../include/$(ARCH) \
 	-I ../../common/include \
 	-I ../../common/include/$(ARCH) \
+	-I ../../loader/include \
 	-I ../../kernel/include \
 	-I $(EXTERNALS)/limine-protocol/include \
 	'-DARCH="$(ARCH)"'
 
-CC := clang
+override LDFLAGS += \
+	-static \
+	-m elf_x86_64 \
+	-nostdlib \
+	-z max-page-size=0x1000 \
+	--gc-sections \
+	-T $(LDSCRIPT)
 
-objs := $(patsubst src/%.c,target/%.o,$(shell find src -type f -name '*.c')) $(patsubst ../shared/src/%.c,target/%.o,$(shell find ../shared/src -type f -name '*.c')) $(patsubst ../shared/$(ARCH)/src/%.c,target/%.o,$(shell find ../shared/$(ARCH)/src -type f -name '*.c'))
+CC := clang
+LD := ld.lld
+OBJCOPY := llvm-objcopy
+
+
+objs := target/xinix-kernel-wrapped.o $(patsubst src/%.c,target/%.o,$(shell find src -type f -name '*.c')) $(patsubst ../shared/src/%.c,target/%.o,$(shell find ../shared/src -type f -name '*.c')) $(patsubst ../shared/$(ARCH)/src/%.c,target/%.o,$(shell find ../shared/$(ARCH)/src -type f -name '*.c'))
 depfiles := $(objs:target/%.o=target/%.d)
-outputs := target/prekernel.a target/link.ld
+outputs := target/xinix-loader
 
 all: $(outputs)
 
@@ -36,11 +50,8 @@ all: $(outputs)
 clean:
 	rm -f target/*
 
-target/prekernel.a: $(objs)
-	ar rcs $@ $(objs)
-
-target/%.ld: src/%.ld
-	cp $< $@
+target/xinix-loader: $(objs)
+	$(LD) $(LDFLAGS) -o $@ $(objs)
 
 target/%.o: src/%.c
 	@mkdir -p $(@D)
@@ -53,3 +64,10 @@ target/%.o: ../shared/src/%.c
 target/%.o: ../shared/$(ARCH)/src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+
+target/xinix-kernel-wrapped.o: $(KERNEL)
+	@mkdir -p $(@D)
+	@cp -v $< target/ 
+	$(OBJCOPY) -I binary -O elf64-x86-64 --set-section-alignment .data=4096 --rename-section .data=.rodata,alloc,load,readonly,data,contents target/$(<F) $@
+	@rm -f target/$(<F)

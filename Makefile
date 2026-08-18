@@ -22,7 +22,7 @@ iso: target/$(IMAGE_NAME).iso | .env_check
 target/$(IMAGE_NAME).iso: kernel externals/limine-binary/limine limine.conf | .env_check
 	rm -rf target/iso-root
 	mkdir -p target/iso-root/boot/limine
-	cp -v kernel/target/kernel target/iso-root/boot/
+	cp -v prekernel/target/xinix-loader target/iso-root/boot/
 	cp -v limine.conf $(limine_bios_files:%=externals/limine-binary/%) target/iso-root/boot/limine/
 	mkdir -p target/iso-root/EFI/BOOT
 	cp -v $(limine_efi_boot_files:%=externals/limine-binary/%) target/iso-root/EFI/BOOT
@@ -36,9 +36,9 @@ target/$(IMAGE_NAME).iso: kernel externals/limine-binary/limine limine.conf | .e
 
 kernel: | .env_check
 	make -C loader EXTERNALS=$(EXTERNALS) ARCH=$(ARCH)
-	make -C prekernel EXTERNALS=$(EXTERNALS) ARCH=$(ARCH)
 	make -C externals/flanterm-build
-	make -C kernel EXTERNALS=$(EXTERNALS) LDSCRIPT=$(shell realpath ./prekernel/target/link.ld) PREKERNEL=$(shell realpath ./prekernel/target/prekernel.a) ARCH=$(ARCH)
+	make -C kernel EXTERNALS=$(EXTERNALS) LOADER=$(shell realpath ./loader/target/loader.a) ARCH=$(ARCH)
+	make -C prekernel EXTERNALS=$(EXTERNALS) ARCH=$(ARCH) KERNEL=$(shell realpath ./kernel/target/xinix-kernel.so)
 
 limine: externals/limine-binary/limine | .env_check
 

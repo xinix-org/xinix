@@ -10,7 +10,9 @@ override CFLAGS += \
 	-std=c23 \
 	-fno-stack-protector \
 	-mno-sse \
-	--target=x86_64-unknown-none-elf
+	--target=x86_64-unknown-none-elf \
+	-fpic \
+	-fvisibility=hidden
 
 CC := clang
 
