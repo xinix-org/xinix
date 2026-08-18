@@ -103,12 +103,14 @@ static inline sysresult2_t apply_rel(void *offset, ElfNative_Reloc reloc,
             return SYSRESULT2_OK(rrel);
         }
         break;
-    case DREL_RELATIVE: if(!skip_non_defered){
-        void **addr = (void **)offset;
-        void *rrel = ((char *)sym_ent->dylib_base) + addend +
-                     (read_add ? (size_t)(*addr) : 0);
-        *addr = rrel;
-    } break;
+    case DREL_RELATIVE:
+        if (!skip_non_defered) {
+            void **addr = (void **)offset;
+            void *rrel = ((char *)sym_ent->dylib_base) + addend +
+                         (read_add ? (size_t)(*addr) : 0);
+            *addr = rrel;
+        }
+        break;
     case DREL_IRELATIVE: {
         void **addr = (void **)offset;
         if (resolve_defered) {
@@ -342,12 +344,12 @@ next:
                 } while (val != 0);
             }
         }
-#define DO_REL(reltag, reladd_f, read_add, defered)                           \
+#define DO_REL(reltag, reladd_f, read_add, defered)                            \
     do {                                                                       \
         auto *_rel = (reltag);                                                 \
         auto *_rel_end = _rel + relcount;                                      \
-        bool _has_defered = false;                                            \
-        bool _needs_defered = (defered);                                     \
+        bool _has_defered = false;                                             \
+        bool _needs_defered = (defered);                                       \
         bool _read_add = (read_add);                                           \
         for (; _rel != _rel_end; _rel++) {                                     \
             auto _syment = ELFNATIVE_R_SYM(_rel->r_info);                      \
@@ -360,12 +362,12 @@ next:
              * resolve_defered, bool skip_non_deffered, const struct           \
              * DynLibraryEntry* ent) */                                        \
             auto res = apply_rel(_offset, _relty, _addend, _read_add, _sym,    \
-                                 _needs_defered, _needs_defered, &ent);      \
+                                 _needs_defered, _needs_defered, &ent);        \
             SYSRESULT_TRY_SYSRESULT2(SYSRESULT2_CODE(res));                    \
             if (!SYSRESULT2_VALUE(res, void *))                                \
-                _has_defered = true;                                          \
+                _has_defered = true;                                           \
         }                                                                      \
-        (defered) = _has_defered;                                            \
+        (defered) = _has_defered;                                              \
     } while (0)
 
         bool rel_defered = false;
