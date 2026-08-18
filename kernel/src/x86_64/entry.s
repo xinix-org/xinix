@@ -12,6 +12,9 @@
 .type _kstart, @function
 
 _kstart:
+    mov rax, cr4
+    or rax, 0x600
+    mov cr4, rax
     mov r9, rcx
     xor r10, r10
     xor r11, r11

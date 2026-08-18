@@ -1,5 +1,6 @@
+#include "arch.h"
 #include "random.h"
-#include "stdbit.h"
+
 #include "sysresult.h"
 #include <acpi.h>
 #include <auxv.h>
@@ -19,6 +20,7 @@
 #include <flanterm_backends/fb.h>
 #include <location.h>
 #include <strslice.h>
+#include <exceptions.h>
 
 [[gnu::section(".interp")]]
 const char __interp[16] = "/xinix-kernel.so";
@@ -51,245 +53,7 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
     *want_comma = true;
 }
 
-enum gdt_flags : uint8_t {
-    GDT_Granularity = 0b10000000,
-    GDT_DB = 0b01000000,
-    GDT_L = 0b00100000,
 
-    GDT_16BIT = 0,
-    GDT_32BIT = GDT_Granularity | GDT_DB,
-    GDT_64BITC = GDT_L,
-};
-
-typedef struct GDT_Entry {
-    _Alignas(8) uint16_t limit_lo;
-    uint16_t base_lo;
-    uint8_t base_mid;
-    volatile uint8_t access;
-    uint8_t flags_and_limit_hi;
-    uint8_t base_hi;
-} gdt_entry_t;
-
-#define USER_SEGMENT_ACCESS(x, dpl)                                            \
-    (uint8_t)(0b10010011 | (((x) & 1) << 3) | ((dpl) & 3) << 5)
-
-enum system_segment_type : uint8_t {
-    LDT = 0x02,
-
-    TSS = 0x09,
-    TSS_Busy = 0x0B,
-};
-
-#define SYSTEM_SEGMENT_ACCESS(ty) (uint8_t)(0b10000000 | ((ty) & 0xF))
-
-// TODO: This is x86-64 specific. This should be moved.
-typedef struct IDT_Entry {
-    _Alignas(16) uint16_t offset_low;
-    uint16_t segment;
-    uint8_t ist;
-    uint8_t type_and_perms;
-    uint16_t offset_mid;
-    uint32_t offset_high;
-    uint32_t reserved;
-} idt_entry_t;
-
-typedef struct IDT {
-    idt_entry_t entries[256];
-} idt_t;
-
-typedef struct [[gnu::packed]] IDT_Descriptor {
-    uint16_t limit;
-    idt_t *idt;
-} idt_descriptor_t;
-
-extern idt_t IDT;
-extern uintptr_t isr_list[256];
-
-typedef struct GDT_Descriptor {
-    _Alignas(8) uint16_t pad[3];
-    uint16_t limit;
-    gdt_entry_t *gdt;
-} gdt_descriptor_t;
-
-void load_idt() {
-    for (int i = 0; i < 256; i++) {
-        ptrdiff_t offset = isr_list[i];
-        uintptr_t ptr = ((uintptr_t)&isr_list) + offset;
-        IDT.entries[i].offset_low = ptr & 0xFFFF;
-        IDT.entries[i].offset_mid = (ptr >> 16) & 0xFFFF;
-        IDT.entries[i].offset_high = ptr >> 32;
-    }
-    idt_descriptor_t descriptor = {
-        .limit = 255 * 16,
-        .idt = &IDT,
-    };
-    __asm__ volatile("lidt %0" ::"m"(descriptor));
-}
-
-static gdt_entry_t gdt_base_entries[16] = {
-    {},
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(1, 0),
-     .flags_and_limit_hi = GDT_16BIT},
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(0, 0),
-     .flags_and_limit_hi = GDT_16BIT},
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(1, 0),
-     .flags_and_limit_hi = 0xF | GDT_32BIT},
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(0, 0),
-     .flags_and_limit_hi = 0xF | GDT_32BIT},
-    {.limit_lo = 0,
-     .access = USER_SEGMENT_ACCESS(1, 0),
-     .flags_and_limit_hi = 0x0 | GDT_64BITC},
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(0, 0),
-     .flags_and_limit_hi = 0xF | GDT_32BIT},
-    {},
-    {.access = SYSTEM_SEGMENT_ACCESS(TSS) & 0x7F},
-    {}, // tss continued
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(1, 3),
-     .flags_and_limit_hi = 0xF | GDT_64BITC},
-    {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(0, 3),
-     .flags_and_limit_hi = 0xF | GDT_32BIT},
-};
-
-void load_gdt() {
-    gdt_descriptor_t desc = {.limit = sizeof(gdt_base_entries) - 1,
-                             .gdt = gdt_base_entries};
-
-    __asm__ volatile("pushq $0x28\n"
-                     "call 1f\n"
-                     "jmp 2f\n"
-                     "1: lgdt %0\n"
-                     "lretq\n"
-                     "2:"
-                     "movl $0x30, %%eax\n"
-                     "mov %%ax, %%ss\n"
-                     "mov %%ax, %%ds\n"
-                     "mov %%ax, %%es\n"
-
-                     ::"m"(desc.limit)
-                     : "eax", "memory");
-}
-
-#define print_reg(name, regexpr)                                               \
-    printf("\t" name " = %#.16llX", (unsigned long long)(regexpr))
-
-#define test_flag(eflags, bit) ((unsigned)(bool)((eflags) & (1 << (bit))))
-
-void print_ucontext(const ucontext_t *context) {
-    print_reg("RAX", context->gregs[0]);
-    print_reg("R8 ", context->gregs[8]);
-    printf("\r\n");
-    print_reg("RCX", context->gregs[1]);
-    print_reg("R9 ", context->gregs[9]);
-    printf("\r\n");
-    print_reg("RDX", context->gregs[2]);
-    print_reg("R10", context->gregs[10]);
-    printf("\r\n");
-    print_reg("RBX", context->gregs[3]);
-    print_reg("R11", context->gregs[11]);
-    printf("\r\n");
-    print_reg("RSP", context->gregs[4]);
-    print_reg("R12", context->gregs[12]);
-    printf("\r\n");
-    print_reg("RBP", context->gregs[5]);
-    print_reg("R13", context->gregs[13]);
-    printf("\r\n");
-    print_reg("RSI", context->gregs[6]);
-    print_reg("R14", context->gregs[14]);
-    printf("\r\n");
-    print_reg("RDI", context->gregs[7]);
-    print_reg("R15", context->gregs[15]);
-    printf("\r\n");
-    printf("\r\n");
-    print_reg("RIP", context->rip);
-    printf("\r\n");
-    print_reg("RFLAGS", context->rflags);
-
-    printf(
-        "\r\n\t[CF=%X, PF=%X, AF=%X, ZF=%X, SF=%X, TF=%X, IF=%X, DF=%X, OF=%X, "
-        "IOPL=%X, NT=%X, AC=%X, ID=%X]\r\n\r\n",
-        test_flag(context->rflags, 0), test_flag(context->rflags, 2),
-        test_flag(context->rflags, 4), test_flag(context->rflags, 6),
-        test_flag(context->rflags, 7), test_flag(context->rflags, 8),
-        test_flag(context->rflags, 9), test_flag(context->rflags, 10),
-        test_flag(context->rflags, 11),
-        (unsigned)((context->rflags >> 12) & 0x3),
-        test_flag(context->rflags, 14), test_flag(context->rflags, 18),
-        test_flag(context->rflags, 21));
-
-    printf("\tES = %#.4X\tCS = %#.4X [CPL = %X]\r\n", context->sregs[0],
-           context->sregs[1], context->sregs[1] & 0x3);
-    printf("\tDS = %#.4X\tSS = %#.4X\r\n", context->sregs[2],
-           context->sregs[3]);
-}
-
-enum exception_id : int {
-    EXCEPT_DE = 0,
-    EXCEPT_DB = 1,
-    EXCEPT_NMI = 2,
-    EXCEPT_BP = 3,
-    EXCEPT_OF = 4,
-    EXCEPT_BR = 5,
-    EXCEPT_UD = 6,
-    EXCEPT_NM = 7,
-    EXCEPT_DF = 8,
-    EXCEPT_MP = 9,
-    EXCEPT_TS = 10,
-    EXCEPT_NP = 11,
-    EXCEPT_SS = 12,
-    EXCEPT_GP = 13,
-    EXCEPT_PF = 14,
-    EXCEPT_MF = 16,
-    EXCEPT_AC = 17,
-    EXCEPT_MC = 18,
-    EXCEPT_XM = 19,
-    EXCEPT_VE = 20,
-    EXCEPT_CP = 21,
-    EXCEPT_HV = 28,
-    EXCEPT_VC = 29,
-    EXCEPT_SC = 30,
-};
-
-#define EXCEPTION_NAME_ID(name)                                                \
-    case EXCEPT_##name:                                                        \
-        return #name
-
-const char *exception_name(enum exception_id id) {
-    switch (id) {
-        EXCEPTION_NAME_ID(DE);
-        EXCEPTION_NAME_ID(DB);
-        EXCEPTION_NAME_ID(NMI);
-        EXCEPTION_NAME_ID(BP);
-        EXCEPTION_NAME_ID(OF);
-        EXCEPTION_NAME_ID(BR);
-        EXCEPTION_NAME_ID(UD);
-        EXCEPTION_NAME_ID(NM);
-        EXCEPTION_NAME_ID(MP);
-        EXCEPTION_NAME_ID(DF);
-        EXCEPTION_NAME_ID(TS);
-        EXCEPTION_NAME_ID(NP);
-        EXCEPTION_NAME_ID(SS);
-        EXCEPTION_NAME_ID(GP);
-        EXCEPTION_NAME_ID(PF);
-        EXCEPTION_NAME_ID(MF);
-        EXCEPTION_NAME_ID(AC);
-        EXCEPTION_NAME_ID(MC);
-        EXCEPTION_NAME_ID(XM);
-        EXCEPTION_NAME_ID(VE);
-        EXCEPTION_NAME_ID(CP);
-        EXCEPTION_NAME_ID(HV);
-        EXCEPTION_NAME_ID(VC);
-        EXCEPTION_NAME_ID(SC);
-    default:
-        return nullptr;
-    }
-}
 
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
@@ -335,10 +99,9 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 
         char flags[17] = "G--------SKIRUWP";
 
-        for (size_t n = 0; n < 32; n++)
-            if (!test_flag(errcode, n))
-                flags[15 - n] = '-';
-
+        for(size_t n = 0; n < 32; n++)
+            if(!(errcode & (1L << n)))
+                flags[15-n] = '-';
         printf("Page Fault CR2=%p, ERR=[%S]\r\n", cr2, STRING(flags));
         hcf(-1, CURRENT());
     }
@@ -358,9 +121,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
-    load_idt();
-
-    load_gdt();
+    load_arch_state();
 
     video_mode *fb_mode = &fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
@@ -489,6 +250,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     printf("\r\n");
 
     clone_page_table();
+
+    save_full_ucontext(cval->current_thread);
 
     printf("\r\n");
 

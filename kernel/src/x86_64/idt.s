@@ -54,6 +54,30 @@ isr_stub\n:
   mov [rdi+146], ax
   mov [rdi+148], dx
   mov [rdi+150], cx
+  mov ecx, 0x30
+  mov ds, cx
+  mov es, cx
+  mov dx, fs
+  mov bx, gs
+  mov [rdi+152], dx
+  mov [rdi+154], bx
+  mov ecx, 0xC0000100
+  rdmsr
+  mov [rdi+168], eax
+  mov [rdi+172], edx
+  mov ecx, 0xC0000102
+  rdmsr
+  mov [rdi+176], eax
+  mov [rdi+180], edx
+  mov ecx, 0xC0000101
+  rdmsr
+  mov ecx, 0x30
+  mov fs, cx
+  mov gs, cx
+  mov ecx, 0xC0000101
+  wrmsr
+  mov ecx, 0xC0000102
+  wrmsr
   lea rcx, [rdi+512]
   cmp qword ptr [rcx-8], 512
   jb 1f
@@ -96,11 +120,26 @@ isr_stub\n:
   mov cx, [rdi+150]
   mov ds, dx
   mov es, bx
+  mov dx, [rdi+152]
+  mov bx, [rdi+154]
   push rcx // , ss
   push qword ptr [rdi+32] //, rsp
   push qword ptr [rdi+136] //, rflags
   push rax // ,cs
   push qword ptr [rdi+128] //, rip
+  mov fs, dx
+  mov ecx, 0xC0000101
+  rdmsr
+  mov gs, bx
+  wrmsr
+  mov ecx, 0xC0000100
+  mov [rdi+168], eax
+  mov [rdi+172], edx
+  wrmsr
+  mov ecx, 0xC0000102
+  mov [rdi+176], eax
+  mov [rdi+180], edx
+  wrmsr
   mov rax, [rdi]
   mov rcx, [rdi+8]
   mov rdx, [rdi+16]
