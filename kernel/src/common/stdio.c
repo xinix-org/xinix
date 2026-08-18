@@ -53,7 +53,7 @@ struct string_file_data {
                       // terminator can be written
 };
 
-size_t write_string_file(void *data, size_t len, const char *bytes) {
+size_t write_string_file(void *data, size_t len, const void *bytes) {
     struct string_file_data *sfdata = data;
     if (len > sfdata->remaining) {
         len = sfdata->remaining;
@@ -64,7 +64,7 @@ size_t write_string_file(void *data, size_t len, const char *bytes) {
     return len;
 }
 
-size_t read_string_file(void *data, size_t len, char *bytes) {
+size_t read_string_file(void *data, size_t len, void *bytes) {
     for (;;) {
     } // TODO
 }
@@ -598,6 +598,7 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
 }
 
 int fclose(FILE *stream) {
-    stream->close(stream->data);
+    if(stream->close)
+        stream->close(stream->data);
     return 0; // TODO: errors
 }

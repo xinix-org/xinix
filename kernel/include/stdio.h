@@ -2,16 +2,21 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct FILE {
     int flags; // TODO
     void *data;
-    size_t (*write)(void *data, size_t len, const char *bytes);
-    size_t (*read)(void *data, size_t len, char *bytes);
+    size_t (*write)(void *data, size_t len, const void *bytes);
+    size_t (*read)(void *data, size_t len, void *bytes);
     void (*close)(void *data);
+    uint64_t (*seek)(void *data, uint64_t pos, int seek_whence); 
 } FILE;
 
 extern FILE *stdout;
+
+extern FILE *krand_dev;
+extern FILE *rand_dev;
 
 int printf(const char *restrict format, ...);
 int fprintf(FILE *restrict stream, const char *restrict format, ...);

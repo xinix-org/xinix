@@ -1,5 +1,6 @@
 #pragma once
 
+#include "auxfuncs.h"
 #include "context.h"
 #include "event.h"
 #include <stdatomic.h>
@@ -65,18 +66,23 @@ int rand_slow_get_entropy(uint8_t  _output[static restrict 16]) {
 
 }
 
-void random_global_gen(uint8_t out[static restrict 16]) {
+#define USER_TICKS_SINCE_INJEST 128
+#define KERNEL_TICKS_SINCE_INJEST 16
+
+int random_global_gen(uint8_t out[static restrict 16]) {
     auto ctx = getcontext();
     auto uctx = ctx->current_thread;
     random_generator* gen = uctx->urand_gen;
 
-    if(rand_ticks_since_inject(gen) > 16){
+    if(rand_ticks_since_inject(gen) >= USER_TICKS_SINCE_INJEST){
         uint8_t buf[16];
         rand_slow_get_entropy(buf);
         rand_injest(gen, buf);
     }
 
     rand_poll(gen, out);
+
+    return 0;
 }
 
 int random_kglobal_gen(uint8_t out[static restrict 16]) {
@@ -85,7 +91,7 @@ int random_kglobal_gen(uint8_t out[static restrict 16]) {
     if(atomic_fetch_or_explicit(&ctx->kgen_lock, 1, memory_order_acquire))
         return -1;
 
-    if(rand_ticks_since_inject(gen) > 16){
+    if(rand_ticks_since_inject(gen) >= KERNEL_TICKS_SINCE_INJEST){
         uint8_t buf[16];
         rand_slow_get_entropy(buf);
         rand_injest(gen, buf);
@@ -97,3 +103,96 @@ int random_kglobal_gen(uint8_t out[static restrict 16]) {
 
     return 0;
 }
+
+void random_global_injest(const uint8_t out[static restrict 16]) {
+    auto ctx = getcontext();
+    auto uctx = ctx->current_thread;
+    random_generator* gen = uctx->urand_gen;
+    if(rand_ticks_since_inject(gen) >= (USER_TICKS_SINCE_INJEST / 2)) {
+        uint8_t buf[16];
+        rand_slow_get_entropy(buf);
+        rand_injest(gen, buf);
+    }
+
+    rand_injest(gen, out);
+}
+
+void random_kglobal_injest(const uint8_t out[static restrict 16]) {
+    auto ctx = getcontext();
+    random_generator* gen = &ctx->kgen;
+    while(atomic_fetch_or_explicit(&ctx->kgen_lock, 1, memory_order_acquire))
+        spin_loop_hint();
+
+    if(rand_ticks_since_inject(gen) >= (KERNEL_TICKS_SINCE_INJEST / 2)){
+        uint8_t buf[16];
+        rand_slow_get_entropy(buf);
+        rand_injest(gen, buf);
+    }
+
+    rand_injest(gen, out);
+
+    atomic_store_explicit(&ctx->kgen_lock, 0, memory_order_release);
+
+}
+
+struct rand_dev_data {
+    int (*gen)(uint8_t[static restrict 16]);
+    void (*injest)(const uint8_t[static restrict 16]);
+};
+
+static struct rand_dev_data global_data = {
+    .gen = random_global_gen,
+    .injest = random_global_injest,
+};
+
+static struct rand_dev_data kglobal_data = {
+    .gen = random_kglobal_gen,
+    .injest = random_kglobal_injest,
+};
+
+static size_t rd_write(void* data, size_t sz, const void* buf) {
+    const uint8_t* rdata = buf;
+    struct rand_dev_data* desc = (struct rand_dev_data*)data;
+    size_t total_written = sz;
+    while(sz >= 16) {
+        (desc->injest)(rdata);
+        rdata += 16;
+        sz -= 16;
+    }
+
+    uint8_t rest[16];
+    memcpy(rest, buf, sz);
+    rest[sz + 1] = 0xF8;
+    rest[15] = 0x01;
+    (desc->injest)(buf);
+
+    return total_written;
+}
+
+static size_t rd_read(void* data, size_t sz, void* buf) {
+    uint8_t* rdata = buf;
+    struct rand_dev_data* desc = (struct rand_dev_data*)data;
+    size_t total_read = 0;
+    while(sz >= 16) {
+        if((desc->gen)(rdata) < 0)
+            return total_read;
+        rdata += 16;
+        sz -= 16;
+        total_read += 16;
+    }
+
+    if(sz > 0) {
+        uint8_t rest[16];
+        if((desc->gen)(rest) < 0)
+            return total_read;
+        memcpy(rdata, rest, sz);
+        total_read += 16;
+    }
+    return total_read;
+}
+
+static FILE impl_rand_dev = {.data = &global_data, .write = rd_write, .read = rd_read};
+static FILE impl_krand_dev = {.data = &kglobal_data, .write = rd_write, .read = rd_read};
+
+FILE *krand_dev = &impl_krand_dev;
+FILE *rand_dev = &impl_rand_dev;

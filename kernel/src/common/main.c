@@ -34,7 +34,7 @@ union auxval_t getauxval(unsigned long a_type) {
         return __auxent[a_type - 2];
 }
 
-size_t stdout_handler(void *data, size_t len, const char *bytes) {
+size_t stdout_handler(void *data, size_t len, const void *bytes) {
     struct flanterm_context *ft_ctx = data;
     flanterm_write(ft_ctx, bytes, len);
     return len;
