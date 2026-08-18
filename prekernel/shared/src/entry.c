@@ -1,4 +1,4 @@
-
+#include <alloc.h>
 #include <auxv.h>
 #include <cmp.h>
 #include <cpuid.h>
@@ -22,8 +22,7 @@ uintptr_t hhdm_offset;
 
 static sysresult2_t
 loader_map_elf(const ElfNative_Ehdr *e_hdr, ElfNative_Dyn **dyn_out,
-               ElfNative_Phdr **phdr_out,
-               void *(*aligned_alloc)(size_t align, size_t sz)) {
+               ElfNative_Phdr **phdr_out) {
     SYSRESULT_TRY_SYSRESULT2(
         elf_validate_ident_native(&e_hdr->e_ident, ELFOSABINONE));
 
@@ -111,13 +110,13 @@ loader_map_elf(const ElfNative_Ehdr *e_hdr, ElfNative_Dyn **dyn_out,
 
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp, void *(*aligned_alloc)(size_t align, size_t size)) {
+                void *rsdp) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;
 
     auto res = loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr,
-                              nullptr, aligned_alloc);
+                              nullptr);
 
     if (SYSRESULT2_CODE(res) < 0)
         hcf();
