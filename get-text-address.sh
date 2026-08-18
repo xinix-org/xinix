@@ -1,0 +1,1 @@
+objdump -h kernel/target/xinix-kernel.so | grep .text | awk '{print $4}'

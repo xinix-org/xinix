@@ -1,0 +1,15 @@
+set pagination off
+target remote localhost:1234
+add-symbol-file prekernel/target/xinix-loader
+set disassemble-next-line on
+set disassembly-flavor intel
+break loader_map_elf
+continue
+fin
+next
+next
+next
+add-symbol-file kernel/target/xinix-kernel.so root+0xTEXT_ADDRESS
+break kmain
+continue
+set pagination on

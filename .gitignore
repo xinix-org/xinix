@@ -2,3 +2,4 @@ compile_commands.json
 target/
 .env_check
 /exceptions.err
+debug-kernel.gdb

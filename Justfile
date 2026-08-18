@@ -29,7 +29,17 @@ debug: build
         -m 2G \
         -s -S \
         -d int &
-    gdb -x debug.gdb
+    gdb -x debug-kernel.gdb
+
+debug-prekernel: build
+    qemu-system-x86_64 \
+        -M q35 \
+        -cdrom target/xinix-dev.iso \
+        -boot d \
+        -m 2G \
+        -s -S \
+        -d int &
+    gdb -x debug-prekernel.gdb
 
 format:
     find . -path './externals' -prune -o \( -name '*.c' -o -name '*.h' \) -print -exec clang-format -i {} \;
