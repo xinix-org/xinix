@@ -96,7 +96,6 @@ static void load_idt(void) {
     __asm__ volatile("lidt %0" ::"m"(descriptor));
 }
 
-
 void load_arch_state(void) {
     load_gdt();
     load_idt();

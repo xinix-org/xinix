@@ -31,4 +31,3 @@ void random_global_ingest(const uint8_t _buf[static restrict 16]);
 void random_kglobal_ingest(const uint8_t _buf[static restrict 16]);
 
 void print_ucontext(const ucontext_t *uctx);
-

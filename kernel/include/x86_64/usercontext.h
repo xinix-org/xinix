@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <random.h>
+#include <stdint.h>
 
 #define FXSAVE_SIZE 512
 
@@ -21,8 +21,8 @@ struct fxsave_state {
     uint8_t ftw;
     uint8_t _reserved5;
     uint16_t fop;
-    void* fip;
-    void* fdp;
+    void *fip;
+    void *fdp;
     uint32_t mxcsr;
     uint32_t mxcsr_mask;
     struct streg fp[8];
@@ -43,7 +43,7 @@ struct user_context {
     void *tdata;
     void *fsgsbase[2];
     uint64_t cr3;
-    random_generator* urand_gen;
+    random_generator *urand_gen;
     void *dregs[6];
     uint64_t thread_flags[4];
     uint64_t cr4;

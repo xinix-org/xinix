@@ -16,11 +16,11 @@
 #include <stdio.h>
 
 #include <auxfuncs.h>
+#include <exceptions.h>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
 #include <location.h>
 #include <strslice.h>
-#include <exceptions.h>
 
 [[gnu::section(".interp")]]
 const char __interp[16] = "/xinix-kernel.so";
@@ -52,8 +52,6 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
     }
     *want_comma = true;
 }
-
-
 
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
@@ -99,9 +97,9 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 
         char flags[17] = "G--------SKIRUWP";
 
-        for(size_t n = 0; n < 32; n++)
-            if(!(errcode & (1L << n)))
-                flags[15-n] = '-';
+        for (size_t n = 0; n < 32; n++)
+            if (!(errcode & (1L << n)))
+                flags[15 - n] = '-';
         printf("Page Fault CR2=%p, ERR=[%S]\r\n", cr2, STRING(flags));
         hcf(-1, CURRENT());
     }
