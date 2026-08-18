@@ -424,7 +424,7 @@ next:
             } break;
             case DT_RELA: {
                 DO_REL(ent.dylib_plt_rela, addend_rela, false, jmprel_defered);
-            }
+            } break;
             default:
                 return SYSRESULT2_ERROR(-999);
             }
