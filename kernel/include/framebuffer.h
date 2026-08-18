@@ -20,5 +20,5 @@ typedef struct {
 typedef struct {
     void *address;
     uint64_t mode_count;
-    video_mode **modes;
+    video_mode *modes;
 } framebuffer;

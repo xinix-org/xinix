@@ -104,14 +104,28 @@ void pkmain(void) {
     init_alloc();
 
     framebuffer fb, *pfb = nullptr;
+    video_mode fb_mode;
     if (framebuffer_request.response != nullptr &&
         framebuffer_request.response->framebuffer_count >= 1) {
         struct limine_framebuffer *l_fb =
             framebuffer_request.response->framebuffers[0];
+        fb_mode = (video_mode){
+            .pitch = l_fb->pitch,
+            .width = l_fb->width,
+            .height = l_fb->height,
+            .bpp = l_fb->bpp,
+            .memory_model = l_fb->memory_model,
+            .red_mask_size = l_fb->red_mask_size,
+            .red_mask_shift = l_fb->red_mask_shift,
+            .green_mask_size = l_fb->green_mask_size,
+            .green_mask_shift = l_fb->green_mask_shift,
+            .blue_mask_size = l_fb->blue_mask_size,
+            .blue_mask_shift = l_fb->blue_mask_shift,
+        };
         fb = (framebuffer){
             .address = l_fb->address,
             .mode_count = l_fb->mode_count,
-            .modes = (video_mode **)l_fb->modes,
+            .modes = &fb_mode,
         };
         pfb = &fb;
     }

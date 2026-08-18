@@ -345,14 +345,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     load_gdt();
 
-    video_mode *fb_mode = fb->modes[0];
+    video_mode *fb_mode = &fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
     // understand Note: this doesn't actually work right now because we don't
     // change the framebuffer size, and that causes issues.
     // TODO: Figure out how to do resizing correctly
     // TODO 2: abstract the terminal into a driver
     for (int i = 0; i < fb->mode_count; i++) {
-        video_mode *test_mode = fb->modes[i];
+        video_mode *test_mode = &fb->modes[i];
         if (test_mode->pitch >= test_mode->width * 4) {
             if ((fb_mode == NULL || test_mode->width * test_mode->height >=
                                         fb_mode->width * fb_mode->height) &&
