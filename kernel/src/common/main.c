@@ -362,10 +362,12 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         }
     }
 
+    init_heap();
+
     // clang-format off
     struct flanterm_context *ft_ctx = flanterm_fb_init(
-        nullptr, // malloc (unused in current configuration)
-        nullptr, // free (unused in current configuration)
+        malloc,
+        nullptr, // free is unneeded and unused if fb init succeedes
         fb->address, fb_mode->width, fb_mode->height, fb_mode->pitch,
         fb_mode->red_mask_size, fb_mode->red_mask_shift,
         fb_mode->green_mask_size, fb_mode->green_mask_shift,
@@ -375,7 +377,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         nullptr, nullptr, // default foreground/background colors (using default)
         nullptr, nullptr, // default bright foreground/background color (using default)
         nullptr, 0, 0, 1, // font and options (using default)
-        0, 0, // font scale settings (using default)
+        1, 1, // font scale settings (choosing to fit more text)
         0, // margin (currently using no margin; may change)
         0, // rotation (don't rotate)
         true
@@ -387,8 +389,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     stdout = &stdout_fd;
     stdout->data = ft_ctx;
     stdout->write = stdout_handler;
-
-    init_heap();
 
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";
