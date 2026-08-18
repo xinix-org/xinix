@@ -58,7 +58,7 @@ static inline ElfNative_Offset addend_rela(Elf64_Rela *r) {
 static inline sysresult2_t apply_rel(void *offset, ElfNative_Reloc reloc,
                                      uint64_t addend, bool read_add,
                                      const Elf64_Sym *sym, bool resolve_defered,
-                                     bool skip_non_deffered,
+                                     bool skip_non_defered,
                                      const struct DynLibraryEntry *ent) {
     const Elf64_Sym *val;
     const struct DynLibraryEntry *sym_ent;
@@ -87,13 +87,15 @@ static inline sysresult2_t apply_rel(void *offset, ElfNative_Reloc reloc,
                 *addr = vaddr;
                 return SYSRESULT2_OK(rrel);
             }
-        } else if (!skip_non_deffered) {
+        } else if (!skip_non_defered) {
             *addr = rrel;
             return SYSRESULT2_OK(rrel);
         }
+
+        break;
     }
     case DREL_GLOB_DAT:
-        if (!skip_non_deffered) {
+        if (!skip_non_defered) {
             void **addr = (void **)offset;
             void *rrel = ((char *)sym_ent->dylib_base) + val->st_value +
                          addend + (read_add ? (size_t)(*addr) : 0);
@@ -101,7 +103,7 @@ static inline sysresult2_t apply_rel(void *offset, ElfNative_Reloc reloc,
             return SYSRESULT2_OK(rrel);
         }
         break;
-    case DREL_RELATIVE: {
+    case DREL_RELATIVE: if(!skip_non_defered){
         void **addr = (void **)offset;
         void *rrel = ((char *)sym_ent->dylib_base) + addend +
                      (read_add ? (size_t)(*addr) : 0);
@@ -241,6 +243,7 @@ sysresult2_t dynld_link(void *base, ElfNative_Dyn dyn[], ElfNative_Phdr *phdrs,
             break;
         case DT_PLTREL:
             ent.dylib_jmprel_type = dynent->d_val;
+            break;
         case DT_DEBUG:
             // TODO:
             break;
@@ -339,12 +342,12 @@ next:
                 } while (val != 0);
             }
         }
-#define DO_REL(reltag, reladd_f, read_add, deferred)                           \
+#define DO_REL(reltag, reladd_f, read_add, defered)                           \
     do {                                                                       \
         auto *_rel = (reltag);                                                 \
         auto *_rel_end = _rel + relcount;                                      \
-        bool _has_deferred = false;                                            \
-        bool _needs_deferred = (deferred);                                     \
+        bool _has_defered = false;                                            \
+        bool _needs_defered = (defered);                                     \
         bool _read_add = (read_add);                                           \
         for (; _rel != _rel_end; _rel++) {                                     \
             auto _syment = ELFNATIVE_R_SYM(_rel->r_info);                      \
@@ -357,68 +360,68 @@ next:
              * resolve_defered, bool skip_non_deffered, const struct           \
              * DynLibraryEntry* ent) */                                        \
             auto res = apply_rel(_offset, _relty, _addend, _read_add, _sym,    \
-                                 _needs_deferred, _needs_deferred, &ent);      \
+                                 _needs_defered, _needs_defered, &ent);      \
             SYSRESULT_TRY_SYSRESULT2(SYSRESULT2_CODE(res));                    \
             if (!SYSRESULT2_VALUE(res, void *))                                \
-                _has_deferred = true;                                          \
+                _has_defered = true;                                          \
         }                                                                      \
-        (deferred) = _has_deferred;                                            \
+        (defered) = _has_defered;                                            \
     } while (0)
 
-        bool rel_deferred = false;
+        bool rel_defered = false;
         switch (relty) {
         case DT_NULL:
             break;
         case DT_REL: {
-            DO_REL(rel.rel, addend_rel, true, rel_deferred);
+            DO_REL(rel.rel, addend_rel, true, rel_defered);
         } break;
         case DT_RELA: {
-            DO_REL(rel.rela, addend_rela, false, rel_deferred);
+            DO_REL(rel.rela, addend_rela, false, rel_defered);
         } break;
         default:
             return SYSRESULT2_ERROR(-999);
         }
 
-        bool jmprel_deferred = false;
+        bool jmprel_defered = false;
         if (bind_now) {
             switch (ent.dylib_jmprel_type) {
             case DT_NULL:
                 break;
             case DT_REL: {
-                DO_REL(ent.dylib_plt_rel, addend_rel, true, jmprel_deferred);
+                DO_REL(ent.dylib_plt_rel, addend_rel, true, jmprel_defered);
             } break;
             case DT_RELA: {
-                DO_REL(ent.dylib_plt_rela, addend_rela, false, jmprel_deferred);
+                DO_REL(ent.dylib_plt_rela, addend_rela, false, jmprel_defered);
             }
             default:
                 return SYSRESULT2_ERROR(-999);
             }
         }
 
-        if (rel_deferred) {
+        if (rel_defered) {
             switch (relty) {
             case DT_NULL:
                 break;
             case DT_REL: {
-                DO_REL(rel.rel, addend_rel, true, rel_deferred);
+                DO_REL(rel.rel, addend_rel, true, rel_defered);
             } break;
             case DT_RELA: {
-                DO_REL(rel.rela, addend_rela, false, rel_deferred);
+                DO_REL(rel.rela, addend_rela, false, rel_defered);
             } break;
             default:
                 return SYSRESULT2_ERROR(-999);
             }
         }
 
-        if (bind_now && jmprel_deferred) {
+        if (bind_now && jmprel_defered) {
             switch (ent.dylib_jmprel_type) {
             case DT_NULL:
                 break;
             case DT_REL: {
-                DO_REL(ent.dylib_plt_rel, addend_rel, true, jmprel_deferred);
+                DO_REL(ent.dylib_plt_rel, addend_rel, true, jmprel_defered);
             } break;
             case DT_RELA: {
-                DO_REL(ent.dylib_plt_rela, addend_rela, false, jmprel_deferred);
+                DO_REL(ent.dylib_plt_rela, addend_rela, false, jmprel_defered);
             }
             default:
                 return SYSRESULT2_ERROR(-999);
