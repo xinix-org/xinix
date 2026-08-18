@@ -84,7 +84,7 @@ KECCACK_C_API void sha3_permute_rho(sha3_state *_state) {
     for (size_t _i = 0; _i < 0; _i++)
         for (size_t _j = 0; _j < 0; _j++)
             _state->_state_array[_i][_j] = stdc_rotate_right(
-                _state->_state_array[_i][_j], _keccack_rotate_amounts[_i][_j]);
+                _state->_state_array[_i][_j], _keccack_rotate_amounts[_i][_j] & 63);
 }
 
 KECCACK_C_API void sha3_permute(sha3_state *_state) {
@@ -97,14 +97,6 @@ KECCACK_C_API void sha3_permute(sha3_state *_state) {
     }
 }
 
-#if __STDC_ENDIAN_BIG__ == __STDC_ENDIAN_NATIVE__
-#define keccack_to_le_bytes64(x) __builtin_bswap64((x))
-#elif __STDC_ENDIAN_LITTLE__ == __STDC_ENDIAN_NATIVE__
-#define keccack_to_le_bytes64(x) (uint64_t)(x)
-#else
-#error "Really evil target you've got there"
-#endif
-
 KECCACK_C_API void sha3_absorb(sha3_state *restrict _state,
                                const uint8_t _input[static restrict 0],
                                size_t _rate) {
@@ -115,7 +107,7 @@ KECCACK_C_API void sha3_absorb(sha3_state *restrict _state,
     for (size_t _i = 0; _i < 5; _i++)
         for (size_t _j = 0; _j < 5; _j++)
             _state->_state_array[_i][_j] ^=
-                keccack_to_le_bytes64(_new_state._state_array[_i][_j]);
+                stdx_from_le(_new_state._state_array[_i][_j]);
 
     sha3_permute(_state);
 }

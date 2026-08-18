@@ -34,10 +34,11 @@ override LDFLAGS += \
 	--gc-sections \
 	-T $(LDSCRIPT)
 
+LIBS := $(RANDLIB)
+
 CC := clang
 LD := ld.lld
 OBJCOPY := llvm-objcopy
-
 
 objs := target/xinix-kernel-wrapped.o $(patsubst src/%.c,target/%.o,$(shell find src -type f -name '*.c')) $(patsubst ../shared/src/%.c,target/%.o,$(shell find ../shared/src -type f -name '*.c')) $(patsubst ../shared/$(ARCH)/src/%.c,target/%.o,$(shell find ../shared/$(ARCH)/src -type f -name '*.c'))
 depfiles := $(objs:target/%.o=target/%.d)
@@ -51,7 +52,7 @@ clean:
 	rm -f target/*
 
 target/xinix-loader: $(objs)
-	$(LD) $(LDFLAGS) -o $@ $(objs)
+	$(LD) $(LDFLAGS) -o $@ $(objs) $(LIBS)
 
 target/%.o: src/%.c
 	@mkdir -p $(@D)

@@ -1,12 +1,19 @@
 #pragma once
 
 #include <keccack.h>
+#include <sha2.h>
 
 #include <stdint.h>
 
 typedef struct random_generator {
-    sha3_state _state;
+    union {
+        sha3_state _keccack_state;
+        SHA2_STATE(64) _sha2_state;
+    };
+    size_t _ticks_since_injest;
 } random_generator;
+
+#define RAND_GEN_STATIC_INIT ((random_generator){._sha2_state = SHA512_INIT, ._ticks_since_injest = 0})
 
 /// Obtains 16 bytes of randomness that can be used for seeding a
 /// `random_generator`. Quality for direct use as random bytes is not
@@ -40,3 +47,8 @@ void rand_injest(random_generator *restrict _gen,
 /// `[_entropy, _entropy+16)` is not a valid range for writes
 void rand_poll(random_generator *restrict _gen,
                uint8_t _output[static restrict 16]);
+
+
+static inline size_t rand_ticks_since_inject(random_generator * _gen) {
+    return _gen->_ticks_since_injest;
+}

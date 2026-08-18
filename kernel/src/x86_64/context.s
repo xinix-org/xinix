@@ -9,7 +9,6 @@ getcontext:
     ret
 
 init_context:
-    // Must be called exactly once per thread
     mov rdx, rdi
     mov eax, edx
     shr rdx, 32

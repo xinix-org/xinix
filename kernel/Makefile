@@ -35,7 +35,7 @@ override LDFLAGS += \
 	-T $(LDSCRIPT) \
 	-z now
 
-override LIBS = $(LOADER) $(EXTERNALS)/flanterm-build/target/flanterm.a
+override LIBS = $(LOADER) $(RANDLIB) $(EXTERNALS)/flanterm-build/target/flanterm.a
 
 CC := clang
 LD := ld.lld

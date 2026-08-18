@@ -149,9 +149,9 @@ stdc_trailing_zeros_ull(unsigned long long _value) _ATTRIBUTE_UNSEQ {
 #define _STDBIT_DEF_ROTATE_RIGHT_FN(ty, suffix)                                \
     static inline ty stdc_rotate_right_##suffix(ty _value,                     \
                                                 unsigned int _count) {         \
-        constexpr static int _width = sizeof(ty) * 8;                          \
-        return ((_value) >> (_count & _width)) |                               \
-               ((_value) << (_width - (_count & _width)));                     \
+        constexpr static unsigned int _width = (sizeof(ty) * 8);                     \
+        return ((_value) >> (_count & (_width - 1))) |                               \
+               ((_value) << (_width - (_count & (_width - 1))));                     \
     }
 #endif
 
@@ -165,9 +165,9 @@ stdc_trailing_zeros_ull(unsigned long long _value) _ATTRIBUTE_UNSEQ {
 #define _STDBIT_DEF_ROTATE_LEFT_FN(ty, suffix)                                 \
     static inline ty stdc_rotate_left_##suffix(ty _value,                      \
                                                unsigned int _count) {          \
-        constexpr static int _width = sizeof(ty) * 8;                          \
-        return ((_value) << (_count & _width)) |                               \
-               ((_value) >> (_width - (_count & _width)));                     \
+        constexpr static unsigned int _width = sizeof(ty) * 8;                          \
+        return ((_value) << (_count & (_width - 1))) |                               \
+               ((_value) >> (_width - (_count & (_width - 1))));                     \
     }
 #endif
 
@@ -188,3 +188,92 @@ _STDBIT_DEF_ROTATE_LEFT_FN(unsigned long long, ull)
 
 #define stdc_rotate_left(value, count)                                         \
     _STDBIT_DEF_GENERIC_MAP(value, stdc_rotate_left, count)
+
+
+static inline unsigned int stdx_swap_bytes_ui(unsigned int _x) {
+#if __has_builtin(__builtin_bswap32)
+    return __builtin_bswap32(_x);
+#else
+    return (_x >> 24) | ((_x >> 16)&0_xFF00) | ((_x << 16) & 0_xFF0000) | (_x << 24);
+#endif
+}
+
+static inline unsigned short stdx_swap_bytes_us(unsigned short _x) {
+#if __has_builtin(__builtin_bswap16)
+    return __builtin_bswap16(_x);
+#else
+    return ((unsigned short)(_x << 8)) | ((unsigned short)(_x >> 8));
+#endif
+}
+
+static inline unsigned char stdx_swap_bytes_uc(unsigned char _x) {
+    return _x;
+}
+
+static inline unsigned long long stdx_swap_bytes_ull(unsigned long long _x) {
+#if __has_builtin(__builtin_bswap64)
+    return __builtin_bswap64(_x);
+#else
+    return stdx_swap_bytes_ui(_x) << 32 | stdx_swap_bytes_ui((_x) >> 32);
+#endif
+}
+
+static inline unsigned long stdx_swap_bytes_ul(unsigned long _x){
+#if LONG_WIDTH == 32
+    return stdx_swap_bytes_ui(_x);
+#else
+    return stdx_swap_bytes_ull(_x);
+#endif
+}
+
+
+#define stdx_swap_bytes(_x) _STDBIT_DEF_GENERIC_MAP(_x, stdx_swap_bytes)
+
+#define _STDBIT_DEF_DO_SWAP_BYTES_FN(name, ty, suffix)\
+    static inline ty name##_##suffix(ty _val){\
+        return stdx_swap_bytes_##suffix(_val);\
+    }
+
+#define _STDBIT_DEF_DO_IDENT_FN(name, ty, suffix)\
+    static inline ty name##_##suffix(ty _val) {\
+        return _val;\
+    }
+
+#define _STDBIT_DEF_SWAP_BYTES_FN_GROUP(name)\
+    _STDBIT_DEF_DO_SWAP_BYTES_FN(name, unsigned char, uc)\
+    _STDBIT_DEF_DO_SWAP_BYTES_FN(name, unsigned short, us)\
+    _STDBIT_DEF_DO_SWAP_BYTES_FN(name, unsigned int, ui)\
+    _STDBIT_DEF_DO_SWAP_BYTES_FN(name, unsigned long, ul)\
+    _STDBIT_DEF_DO_SWAP_BYTES_FN(name, unsigned long long, ull)
+
+#define _STDBIT_DEF_IDENT_FN_GROUP(name)\
+    _STDBIT_DEF_DO_IDENT_FN(name, unsigned char, uc)\
+    _STDBIT_DEF_DO_IDENT_FN(name, unsigned short, us)\
+    _STDBIT_DEF_DO_IDENT_FN(name, unsigned int, ui)\
+    _STDBIT_DEF_DO_IDENT_FN(name, unsigned long, ul)\
+    _STDBIT_DEF_DO_IDENT_FN(name, unsigned long long, ull)
+
+#ifndef __STDC_ENDIAN_LITTLE__
+#define __STDC_ENDIAN_LITTLE__ __ORDER_LITTLE_ENDIAN__
+#endif
+
+#ifndef __STDC_ENDIAN_BIG__
+#define __STDC_ENDIAN_BIG__ __ORDER_BIG_ENDIAN__
+#endif
+
+#ifndef __STDC_ENDIAN_NATIVE__
+#define __STDC_ENDIAN_NATIVE__ __BYTE_ORDER__
+#endif
+
+
+#if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__
+_STDBIT_DEF_SWAP_BYTES_FN_GROUP(stdx_from_be)
+_STDBIT_DEF_IDENT_FN_GROUP(stdx_from_le)
+#elif __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+_STDBIT_DEF_SWAP_BYTES_FN_GROUP(stdx_from_le)
+_STDBIT_DEF_IDENT_FN_GROUP(stdx_from_be)
+#endif
+
+
+#define stdx_from_le(_val) _STDBIT_DEF_GENERIC_MAP(_val, stdx_from_le)
+#define stdx_from_be(_val) _STDBIT_DEF_GENERIC_MAP(_val, stdx_from_be)

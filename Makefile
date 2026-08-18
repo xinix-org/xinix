@@ -36,9 +36,10 @@ target/$(IMAGE_NAME).iso: kernel externals/limine-binary/limine limine.conf | .e
 
 kernel: | .env_check
 	make -C loader EXTERNALS=$(EXTERNALS) ARCH=$(ARCH)
+	make -C randlib EXTERNALS=$(EXTERNALS) ARCH=$(ARCH)
 	make -C externals/flanterm-build
-	make -C kernel EXTERNALS=$(EXTERNALS) LOADER=$(shell realpath ./loader/target/loader.a) ARCH=$(ARCH)
-	make -C prekernel EXTERNALS=$(EXTERNALS) ARCH=$(ARCH) KERNEL=$(shell realpath ./kernel/target/xinix-kernel.so)
+	make -C kernel EXTERNALS=$(EXTERNALS) LOADER=$(shell realpath ./loader/target/loader.a) ARCH=$(ARCH) RANDLIB=$(realpath ./randlib/target/randlib.a)
+	make -C prekernel EXTERNALS=$(EXTERNALS) ARCH=$(ARCH) KERNEL=$(shell realpath ./kernel/target/xinix-kernel.so) RANDLIB=$(realpath ./randlib/target/randlib.a)
 	rm -f debug-kernel.gdb
 	cat debug-kernel.gdb.in | sed s/TEXT_ADDRESS/$(shell ./get-text-address.sh)/ > debug-kernel.gdb
 
