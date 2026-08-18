@@ -128,13 +128,9 @@ void *calloc(size_t num, size_t size) {
 
 void free(void *_ptr) { return; }
 
-void free_sized(void* ptr, size_t _size) {
-    free(ptr);
-}
+void free_sized(void *ptr, size_t _size) { free(ptr); }
 
-void free_aligned_sized(void *ptr, size_t alignment, size_t size) {
-    free(ptr);
-}
+void free_aligned_sized(void *ptr, size_t alignment, size_t size) { free(ptr); }
 
 // strlen because that's useful
 

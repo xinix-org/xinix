@@ -11,7 +11,7 @@ enum EventKinds : uint32_t {
     EVENT_TIMER = 0x04'000000,
 };
 
-#define KEY(step, scode) 
+#define KEY(step, scode)
 
-/// Writes `r_event` to the 
+/// Writes `r_event` to the
 void push_event(uint32_t r_event);

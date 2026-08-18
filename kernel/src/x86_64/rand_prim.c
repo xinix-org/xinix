@@ -1,13 +1,13 @@
 #pragma once
 
-#include <stdint.h>
 #include <cpuid.h>
-#include <string.h>
 #include <stdbit.h>
+#include <stdint.h>
+#include <string.h>
 
 uint32_t __rand_get_event_time(void) {
     uint32_t val = 0;
-    if(is_x86_feature_detected(tsc)) {
+    if (is_x86_feature_detected(tsc)) {
         __asm__ volatile("cpuid\n\trdtsc" : "=a"(val)::"edx", "ecx", "ebx");
     }
 
@@ -29,8 +29,8 @@ int __rand_slow_get_entropy_backing(uint8_t _output[static restrict 16]) {
             a[0] = stdc_rotate_right(a[0], 2) ^ (r & 7);
         }
 
-        a[1] =
-            ((((uint64_t)__rand_slow_get_entropy_backing) << 20) & 0xFFFF'FFFF'0000'0000);
+        a[1] = ((((uint64_t)__rand_slow_get_entropy_backing) << 20) &
+                0xFFFF'FFFF'0000'0000);
         for (size_t i = 0; i < 32; i += 2) {
             uint32_t r;
             __asm__ volatile("cpuid\n\trdtsc" : "=a"(r)::"edx", "ecx", "ebx");

@@ -10,7 +10,7 @@ typedef struct FILE {
     size_t (*write)(void *data, size_t len, const void *bytes);
     size_t (*read)(void *data, size_t len, void *bytes);
     void (*close)(void *data);
-    uint64_t (*seek)(void *data, uint64_t pos, int seek_whence); 
+    uint64_t (*seek)(void *data, uint64_t pos, int seek_whence);
 } FILE;
 
 extern FILE *stdout;

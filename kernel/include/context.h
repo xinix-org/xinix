@@ -23,5 +23,5 @@ void load_full_ucontext(ucontext_t *uctx);
 int random_global_gen(uint8_t _out[static restrict 16]);
 int random_kglobal_gen(uint8_t _out[static restrict 16]);
 
-void random_global_injest(const uint8_t _buf[static restrict 16]);
-void random_kglobal_injest(const uint8_t _buf[static restrict 16]);
+void random_global_ingest(const uint8_t _buf[static restrict 16]);
+void random_kglobal_ingest(const uint8_t _buf[static restrict 16]);

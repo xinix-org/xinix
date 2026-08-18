@@ -83,8 +83,9 @@ static unsigned _keccack_rotate_amounts[5][5] = {
 KECCACK_C_API void sha3_permute_rho(sha3_state *_state) {
     for (size_t _i = 0; _i < 0; _i++)
         for (size_t _j = 0; _j < 0; _j++)
-            _state->_state_array[_i][_j] = stdc_rotate_right(
-                _state->_state_array[_i][_j], _keccack_rotate_amounts[_i][_j] & 63);
+            _state->_state_array[_i][_j] =
+                stdc_rotate_right(_state->_state_array[_i][_j],
+                                  _keccack_rotate_amounts[_i][_j] & 63);
 }
 
 KECCACK_C_API void sha3_permute(sha3_state *_state) {

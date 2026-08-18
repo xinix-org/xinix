@@ -329,16 +329,16 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 
     print_ucontext(context);
 
-    if(irq == EXCEPT_PF) {
-        void* cr2;
+    if (irq == EXCEPT_PF) {
+        void *cr2;
         __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
 
         char flags[17] = "G--------SKIRUWP";
 
-        for(size_t n = 0; n < 32; n++)
-            if(!test_flag(errcode, n))
-                flags[15-n] = '-';
-        
+        for (size_t n = 0; n < 32; n++)
+            if (!test_flag(errcode, n))
+                flags[15 - n] = '-';
+
         printf("Page Fault CR2=%p, ERR=[%S]\r\n", cr2, STRING(flags));
         hcf(-1, CURRENT());
     }
@@ -443,28 +443,29 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         hcf(ERR_GENERIC, CURRENT());
     }
     memset(tctx, 0, sizeof(ucontext_t));
-    random_generator* gen = aligned_alloc(alignof(random_generator), sizeof(random_generator));
+    random_generator *gen =
+        aligned_alloc(alignof(random_generator), sizeof(random_generator));
     *gen = RAND_GEN_STATIC_INIT;
     tctx->xsave_size = FXSAVE_SIZE; // Uncomment when we turn on cr4.fxsr
     ctx->total_context_size = sizeof(kcontext_t);
     ctx->self = ctx;
     ctx->current_thread = tctx;
-    const uint8_t* at_rand = getauxval(AT_RANDOM).a_ptr;
+    const uint8_t *at_rand = getauxval(AT_RANDOM).a_ptr;
     ctx->kgen = RAND_GEN_STATIC_INIT;
-    if(at_rand)
-        rand_injest(&ctx->kgen, at_rand);
+    if (at_rand)
+        rand_ingest(&ctx->kgen, at_rand);
     else
         rand_init(&ctx->kgen);
 
     uint8_t grand[16];
     rand_poll(&ctx->kgen, grand);
-    rand_injest(gen, grand);
+    rand_ingest(gen, grand);
 
     tctx->urand_gen = gen;
 
-    init_context(ctx);    
+    init_context(ctx);
 
-    kcontext_t* cval = getcontext();
+    kcontext_t *cval = getcontext();
     printf("Kernel Context is: %p\r\n", cval);
     printf("Thread Context is: %p\r\n", cval->current_thread);
 
@@ -534,16 +535,18 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     union {
         uint8_t buf[16];
-        unsigned long long r[16/sizeof(unsigned long long)];
+        unsigned long long r[16 / sizeof(unsigned long long)];
     } rand_bytes = {};
 
     random_kglobal_gen(rand_bytes.buf);
 
-    printf("KContext Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0], rand_bytes.r[1]);
+    printf("KContext Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0],
+           rand_bytes.r[1]);
 
     random_global_gen(rand_bytes.buf);
 
-    printf("Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0], rand_bytes.r[1]);
+    printf("Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0],
+           rand_bytes.r[1]);
 
     hcf(0, CURRENT());
 }

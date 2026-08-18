@@ -512,16 +512,16 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
                                                stream, flags, min_width, 2);
         } break;
         case 's': {
-                const char *string = va_arg(vlist, const char *);
-                // TODO: flags, specifiers, everything else
-                size_t len;
-                if (precision == -1) {
-                    len = strlen(string);
-                } else {
-                    len = strnlen(string, precision);
-                }
-                WRITE_CHECKED(stream, len, string, bytes_printed);
-            } break;
+            const char *string = va_arg(vlist, const char *);
+            // TODO: flags, specifiers, everything else
+            size_t len;
+            if (precision == -1) {
+                len = strlen(string);
+            } else {
+                len = strnlen(string, precision);
+            }
+            WRITE_CHECKED(stream, len, string, bytes_printed);
+        } break;
         case 'S': {
             auto string = va_arg(vlist, string_t);
             // TODO: flags, specifiers, everything else
@@ -529,7 +529,8 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
             if (precision != -1) {
                 len = len < precision ? len : precision;
             }
-            WRITE_CHECKED(stream, len, (const char*) string.string_data, bytes_printed);
+            WRITE_CHECKED(stream, len, (const char *)string.string_data,
+                          bytes_printed);
         } break;
         case 'p':
             const void *ptr = va_arg(vlist, const void *);
@@ -576,16 +577,21 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
             unsigned long long mid2 = (u.uuid_hi) & 0xFFFF;
             unsigned long long mid3 = u.uuid_lo >> 48;
             unsigned long long lo = u.uuid_lo & 0xFFFF'FFFF'FFFF;
-            bytes_printed += print_unsigned_int(hi, 8, "", 0, UPPER_HEX, stream, ZERO_FLAG, 0, 16);
+            bytes_printed += print_unsigned_int(hi, 8, "", 0, UPPER_HEX, stream,
+                                                ZERO_FLAG, 0, 16);
             WRITE_CHECKED(stream, 1, "-", bytes_printed);
-            bytes_printed += print_unsigned_int(mid1, 4, "", 0, UPPER_HEX, stream, ZERO_FLAG, 0, 16);
+            bytes_printed += print_unsigned_int(mid1, 4, "", 0, UPPER_HEX,
+                                                stream, ZERO_FLAG, 0, 16);
             WRITE_CHECKED(stream, 1, "-", bytes_printed);
-            bytes_printed += print_unsigned_int(mid2, 4, "", 0, UPPER_HEX, stream, ZERO_FLAG, 0, 16);
+            bytes_printed += print_unsigned_int(mid2, 4, "", 0, UPPER_HEX,
+                                                stream, ZERO_FLAG, 0, 16);
             WRITE_CHECKED(stream, 1, "-", bytes_printed);
-            bytes_printed += print_unsigned_int(mid3, 4, "", 0, UPPER_HEX, stream, ZERO_FLAG, 0, 16);
+            bytes_printed += print_unsigned_int(mid3, 4, "", 0, UPPER_HEX,
+                                                stream, ZERO_FLAG, 0, 16);
             WRITE_CHECKED(stream, 1, "-", bytes_printed);
-            bytes_printed += print_unsigned_int(lo, 12, "", 0, UPPER_HEX, stream, ZERO_FLAG, 0, 16);
-            if(flags & POUND_FLAG)
+            bytes_printed += print_unsigned_int(lo, 12, "", 0, UPPER_HEX,
+                                                stream, ZERO_FLAG, 0, 16);
+            if (flags & POUND_FLAG)
                 WRITE_CHECKED(stream, 1, "-", bytes_printed);
         } break;
         default:
@@ -598,7 +604,7 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
 }
 
 int fclose(FILE *stream) {
-    if(stream->close)
+    if (stream->close)
         stream->close(stream->data);
     return 0; // TODO: errors
 }
