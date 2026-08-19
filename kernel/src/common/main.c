@@ -119,8 +119,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
-    load_arch_state();
-
     video_mode *fb_mode = &fb->modes[0];
     // Pick the highest-resolution mode we can find that flanterm will
     // understand Note: this doesn't actually work right now because we don't
@@ -139,6 +137,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     }
 
     init_heap();
+    load_arch_state();
 
     // clang-format off
     struct flanterm_context *ft_ctx = flanterm_fb_init(
@@ -165,6 +164,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     stdout = &stdout_fd;
     stdout->data = ft_ctx;
     stdout->write = stdout_handler;
+
+    
 
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";

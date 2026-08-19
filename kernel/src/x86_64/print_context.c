@@ -158,39 +158,39 @@ void print_ucontext(const ucontext_t *context) {
            test_flag(context->cr4, 9), test_flag(context->cr4, 10),
            test_flag(context->cr4, 18));
 
-    printf("\tDR0 = %.16p\tDR1 = %.16p\r\n", context->dregs[0],
-           context->dregs[1]);
-    printf("\tDR2 = %.16p\tDR3 = %.16p\r\n", context->dregs[2],
-           context->dregs[3]);
-    uintptr_t dr6 = (uintptr_t)context->dregs[4];
-    printf("\tDR6 = %#.16lX [BP0 = %X, BP1 = %X, BP2 = %X, BP3 = %X, BLD = %X, "
-           "BD = %X, BS = %X, BT = %X, RTM = %X]\r\n",
-           dr6, test_flag(dr6, 0), test_flag(dr6, 1), test_flag(dr6, 2),
-           test_flag(dr6, 3), test_flag(dr6, 11), test_flag(dr6, 13),
-           test_flag(dr6, 14), test_flag(dr6, 15), !test_flag(dr6, 16));
-    uintptr_t dr7 = (uintptr_t)context->dregs[5];
-    char en[4][3] = {"--", "--", "--", "--"};
-    for (size_t n = 0; n < 4; n++) {
-        if (test_flag(dr7, 2 * n))
-            en[n][0] = 'L';
-        if (test_flag(dr7, 2 * n + 1))
-            en[n][1] = 'G';
-    }
+    // printf("\tDR0 = %.16p\tDR1 = %.16p\r\n", context->dregs[0],
+    //        context->dregs[1]);
+    // printf("\tDR2 = %.16p\tDR3 = %.16p\r\n", context->dregs[2],
+    //        context->dregs[3]);
+    // uintptr_t dr6 = (uintptr_t)context->dregs[4];
+    // printf("\tDR6 = %#.16lX [BP0 = %X, BP1 = %X, BP2 = %X, BP3 = %X, BLD = %X, "
+    //        "BD = %X, BS = %X, BT = %X, RTM = %X]\r\n",
+    //        dr6, test_flag(dr6, 0), test_flag(dr6, 1), test_flag(dr6, 2),
+    //        test_flag(dr6, 3), test_flag(dr6, 11), test_flag(dr6, 13),
+    //        test_flag(dr6, 14), test_flag(dr6, 15), !test_flag(dr6, 16));
+    // uintptr_t dr7 = (uintptr_t)context->dregs[5];
+    // char en[4][3] = {"--", "--", "--", "--"};
+    // for (size_t n = 0; n < 4; n++) {
+    //     if (test_flag(dr7, 2 * n))
+    //         en[n][0] = 'L';
+    //     if (test_flag(dr7, 2 * n + 1))
+    //         en[n][1] = 'G';
+    // }
 
-    char cond[4][4] = {};
-    constexpr static char width[4] = "1284";
-    constexpr static char cval[4][2] = {"IX", "WO", "IO", "RW"};
-    for (size_t n = 0; n < 4; n++) {
-        auto c = (dr7 >> (16 + 4 * n)) & 0xF;
-        cond[n][0] = cval[c & 3][0];
-        cond[n][1] = cval[c & 3][1];
-        cond[n][2] = width[c >> 2];
-    }
-    printf("\tDR7 = %#.16lX [RTM = %X]\r\n\t", dr7, test_flag(dr7, 11));
-    for (size_t n = 0; n < 4; n++)
-        printf("\tBP%x = %s (%s, LOG=%X)", n, cond[n], en[n],
-               test_flag(dr7, 32 + n));
-    printf("\r\n");
+    // char cond[4][4] = {};
+    // constexpr static char width[4] = "1284";
+    // constexpr static char cval[4][2] = {"IX", "WO", "IO", "RW"};
+    // for (size_t n = 0; n < 4; n++) {
+    //     auto c = (dr7 >> (16 + 4 * n)) & 0xF;
+    //     cond[n][0] = cval[c & 3][0];
+    //     cond[n][1] = cval[c & 3][1];
+    //     cond[n][2] = width[c >> 2];
+    // }
+    // printf("\tDR7 = %#.16lX [RTM = %X]\r\n\t", dr7, test_flag(dr7, 11));
+    // for (size_t n = 0; n < 4; n++)
+    //     printf("\tBP%x = %s (%s, LOG=%X)", n, cond[n], en[n],
+    //            test_flag(dr7, 32 + n));
+    // printf("\r\n");
 
     if (context->xsave_size >= FXSAVE_SIZE) {
         uint16_t fsw = context->fxsave.fsw;

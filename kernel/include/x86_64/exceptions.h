@@ -32,7 +32,7 @@ enum exception_id : int {
     case EXCEPT_##name:                                                        \
         return #name
 
-const char *exception_name(enum exception_id id) {
+static inline const char *exception_name(enum exception_id id) {
     switch (id) {
         EXCEPTION_NAME_ID(DE);
         EXCEPTION_NAME_ID(DB);
