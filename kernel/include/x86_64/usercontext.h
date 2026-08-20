@@ -11,8 +11,11 @@ struct streg {
     uint16_t res[3];
 };
 
-struct xmmreg {
-    _Alignas(16) uint64_t pieces[2];
+union xmmreg {
+    _Alignas(16) uint64_t u64x2[2];
+    uint32_t u32x4[4];
+    float f32x4[4];
+    double f64x2[2];
 };
 
 struct fxsave_state {
@@ -26,7 +29,7 @@ struct fxsave_state {
     uint32_t mxcsr;
     uint32_t mxcsr_mask;
     struct streg fp[8];
-    struct xmmreg xmm[16];
+    union xmmreg xmm[16];
     uint64_t reserved416[6];
     uint64_t avail[6];
 };
@@ -56,7 +59,7 @@ struct user_context {
     /// If `>FXSAVE_SIZE`, contains xsave state starting at `fxsave`
     uint64_t xsave_size;
     _Alignas(64) struct fxsave_state fxsave;
-    uint64_t restxsave[];
+    _Alignas(64) uint64_t restxsave[];
 };
 
 // Santity check that we have the right amount of padding

@@ -53,11 +53,17 @@ constexpr uint32_t amx_feature_mask[16] = {
     0, 0, 0, (1 << 22) | (1 << 24) | (1 << 25), (1 << 21), 0, (1 << 8)};
 
 void init_cpu_feature_array(void) {
-    auto eax1 = cpuid(1);
+    auto base_leaf = cpuid(0);
+    auto max_default_leaf = base_leaf.eax;
+    auto ext_leaf = cpuid(0x8000'0000);
+    auto max_ext_leaf = ext_leaf.eax;
+
+    auto eax1 = max_default_leaf >= 1 ? cpuid(1) : (struct cpuid){};
     auto eax7_ecx0 = cpuid_count(7, 0);
-    auto eax7_ecx1 = cpuid_count(7, 1);
-    auto eax7_ecx2 = cpuid_count(7, 2);
-    auto eax8000_0001 = cpuid(0x8000'0001);
+    auto eax7_max_sub = eax7_ecx0.eax;
+    auto eax7_ecx1 = eax7_max_sub >= 1 ? cpuid_count(7, 1) : (struct cpuid){};
+    auto eax7_ecx2 = eax7_max_sub >= 2 ? cpuid_count(7, 2) : (struct cpuid){};
+    auto eax8000_0001 = max_ext_leaf >= 0x8000'0001 ? cpuid(0x8000'0001) : (struct cpuid){};
 
     x86_feature_array[0] = eax1.ecx;
     x86_feature_array[1] = eax1.edx;
@@ -81,8 +87,8 @@ void init_cpu_feature_array(void) {
     bool has_apx = false;
 
     if (has_xsave) {
-        auto eax0D_ecx0 = cpuid_count(0x0D, 0);
-        auto eax0D_ecx1 = cpuid_count(0x0D, 1);
+        auto eax0D_ecx0 = max_default_leaf >= 0x0D ? cpuid_count(0x0D, 0) : (struct cpuid){};
+        auto eax0D_ecx1 = max_default_leaf >= 0x0D ?  cpuid_count(0x0D, 1)  : (struct cpuid){};
         x86_feature_array[32] = eax0D_ecx0.eax;
         x86_feature_array[33] = eax0D_ecx0.edx;
         x86_feature_array[34] = eax0D_ecx1.eax;
@@ -111,8 +117,9 @@ void init_cpu_feature_array(void) {
         x86_feature_array[7] &= ~(1 << 21);
 
     if (has_avx10) {
-        auto eax24_ecx0 = cpuid_count(0x24, 0);
-        auto eax24_ecx1 = cpuid_count(0x24, 1);
+        auto eax24_ecx0 = max_default_leaf >= 0x24 ? cpuid_count(0x24, 0) : (struct cpuid){};
+        auto max_eax24_sub = eax24_ecx0.eax;
+        auto eax24_ecx1 = max_eax24_sub >= 1 ? cpuid_count(0x24, 1) : (struct cpuid){};
         x86_feature_array[16] = eax24_ecx0.ebx;
 
         bool has_version2 = (eax24_ecx0.ebx & 0xFF) >= 2;
