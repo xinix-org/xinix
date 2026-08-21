@@ -15,23 +15,6 @@ _kstart:
     mov rax, cr4
     or rax, 0x600
     mov cr4, rax
-    mov r9, rcx
-    xor r10, r10
-    xor r11, r11
-    _kstart._auxv:
-    cmp qword ptr [r9], 0
-    je _kstart._auxv_end
-    mov r12, qword ptr [r9]
-    mov r13, qword ptr [r9+8]
-    lea r9, [r9+16]
-    sub r12, 80
-    jb _kstart._auxv
-    cmp r12, 1
-    ja _kstart._auxv
-    cmove r10, r13
-    cmovne r11, r13
-    jmp _kstart._auxv
-    _kstart._auxv_end:
     mov eax, 38
     cmp r11, rax
     cmova r11, rax
@@ -99,12 +82,3 @@ _kstart:
 
 // .size _kstart, _kstart._end-_kstart
 
-
-.data
-
-.global x86_feature_array
-.protected x86_feature_array
-.type x86_feature_array, @object
-.size x86_feature_array, 152
-x86_feature_array:
-    .space 152

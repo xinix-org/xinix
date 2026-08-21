@@ -61,7 +61,8 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
     else
         printf("Got Interrupt %X)\r\n", irq);
 
-    print_ucontext(context);
+    if(irq != EXCEPT_BP)
+        print_ucontext(context);
 
     if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 &&
         (size_t)context->gregs[3] == DEBUG_MAGIC &&
@@ -109,6 +110,8 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 
 extern void init_context(kcontext_t *ctx);
 
+extern void init_cpuid_array();
+
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
                   void *base_addr) {
@@ -116,6 +119,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         if (auxv_ent->a_type != AT_IGNORE)
             __auxent[auxv_ent->a_type - 2] = auxv_ent->a_un;
     }
+
+    init_cpuid_array();
 
     framebuffer *fb = (framebuffer *)getauxval(AT_KXINIX_FRAMEBUFFER).a_ptr;
 
@@ -176,21 +181,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     flanterm_write(ft_ctx, alloc_test, 40);
 
     printf("Address of printf is %#.16llX\r\n\r\n", printf);
-
-    printf("Feature flags: ");
-    bool want_comma = false;
-    x86_enumerate_supported_features(print_feature_flag, &want_comma);
-    printf("\r\n");
-
-    printf("Feature array:");
-    for (int i = 0; i < 38; i++) {
-        if (i & 7)
-            printf(" ");
-        else
-            printf("\r\n");
-        printf("%08X", x86_feature_array[i]);
-    }
-    printf("\r\n\r\n");
 
     kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
     if (!ctx) {
@@ -309,6 +299,21 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     printf("Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0],
            rand_bytes.r[1]);
+
+    printf("Feature flags: ");
+    bool want_comma = false;
+    x86_enumerate_supported_features(print_feature_flag, &want_comma);
+    printf("\r\n");
+
+    printf("Feature array:");
+    for (int i = 0; i < 38; i++) {
+        if (i & 7)
+            printf(" ");
+        else
+            printf("\r\n");
+        printf("%08X", x86_feature_array[i]);
+    }
+    printf("\r\n\r\n");
 
     hcf(0, CURRENT());
 }

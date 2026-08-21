@@ -86,18 +86,37 @@ void init_cpu_feature_array(void) {
     bool has_amx = false;
     bool has_apx = false;
 
+    bool has_pku = false;
+    bool has_cet_u = false;
+    bool has_cet_s = false;
+    bool has_uintr = false;
+    bool has_pasid = false;
+    bool has_pt = false;
+    bool has_lbr = false;
+    bool has_lwp = false;
+
     if (has_xsave) {
         auto eax0D_ecx0 = max_default_leaf >= 0x0D ? cpuid_count(0x0D, 0) : (struct cpuid){};
         auto eax0D_ecx1 = max_default_leaf >= 0x0D ?  cpuid_count(0x0D, 1)  : (struct cpuid){};
+        uint64_t xcr0_supported = ((uint64_t)eax0D_ecx0.eax) | (((uint64_t)eax0D_ecx0.edx)<<32);
+        uint64_t xss_supported = ((uint64_t)eax0D_ecx1.ecx) | (((uint64_t)eax0D_ecx1.edx)<<32);
         x86_feature_array[32] = eax0D_ecx0.eax;
         x86_feature_array[33] = eax0D_ecx0.edx;
         x86_feature_array[34] = eax0D_ecx1.eax;
         x86_feature_array[36] = eax0D_ecx1.ecx;
         x86_feature_array[37] = eax0D_ecx1.edx;
-        has_avx = (eax0D_ecx0.eax & (1 << 2));
-        has_avx512 = (eax0D_ecx0.eax & (0b111 << 5)) == (0b111 << 5);
-        has_amx = (eax0D_ecx0.eax & (0b11 << 17)) == (0b11 << 17);
-        has_apx = (eax0D_ecx0.eax & (1 << 19));
+        has_avx = (xcr0_supported & (1 << 2));
+        has_avx512 = (xcr0_supported & (0b111 << 5)) == (0b111 << 5);
+        has_amx = (xcr0_supported & (0b11 << 17)) == (0b11 << 17);
+        has_apx = (xcr0_supported & (1 << 19));
+        has_pku = (xcr0_supported & (1 << 9));
+        has_cet_u = (xss_supported & (1 << 11));
+        has_cet_s = (xss_supported & (1 << 12));
+        has_pt = xss_supported & (1 << 8);
+        has_uintr = xss_supported & (1 << 14);
+        has_lbr = xss_supported & (1 << 15);
+        has_lwp = xcr0_supported & (1ull << 62);
+        has_pasid = xss_supported & (1 << 10);
     }
 
     bool has_avx10 = has_avx512 && (eax7_ecx1.edx & (1 << 19));
@@ -126,4 +145,29 @@ void init_cpu_feature_array(void) {
 
         x86_feature_array[17] = eax24_ecx1.ecx | (has_version2 << 2);
     }
+
+    if(!has_pku)
+        x86_feature_array[2] &= ~(0b11 << 3);
+
+    if(!has_cet_s || !has_cet_u) {
+        x86_feature_array[2] &= ~(1 << 7);
+        x86_feature_array[7] &= ~(1 << 18);
+    }
+
+    if(!has_pt) {
+        x86_feature_array[4] &= ~(1 << 25);
+    }
+
+    if(!has_uintr) {
+        x86_feature_array[3] &= ~(1 << 5);
+    }
+
+    if(!has_lbr)
+        x86_feature_array[3] &= ~(1 << 19);
+
+    if(!has_pasid)
+        x86_feature_array[2] &= ~(1 << 29);
+
+    if(!has_lwp)
+        x86_feature_array[13] &= ~(1 << 15);
 }
