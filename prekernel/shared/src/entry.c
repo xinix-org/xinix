@@ -20,9 +20,9 @@ extern ElfNative_Ehdr _binary_target_xinix_kernel_so_start;
 
 uintptr_t hhdm_offset;
 
-static sysresult2_t
-loader_map_elf(const ElfNative_Ehdr *e_hdr, ElfNative_Dyn **dyn_out,
-               ElfNative_Phdr **phdr_out) {
+static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
+                                   ElfNative_Dyn **dyn_out,
+                                   ElfNative_Phdr **phdr_out) {
     SYSRESULT_TRY_SYSRESULT2(
         elf_validate_ident_native(&e_hdr->e_ident, ELFOSABINONE));
 
@@ -115,8 +115,8 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
 
     hhdm_offset = _hhdm_offset;
 
-    auto res = loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr,
-                              nullptr);
+    auto res =
+        loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr, nullptr);
 
     if (SYSRESULT2_CODE(res) < 0)
         hcf();

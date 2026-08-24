@@ -63,7 +63,8 @@ void init_cpu_feature_array(void) {
     auto eax7_max_sub = eax7_ecx0.eax;
     auto eax7_ecx1 = eax7_max_sub >= 1 ? cpuid_count(7, 1) : (struct cpuid){};
     auto eax7_ecx2 = eax7_max_sub >= 2 ? cpuid_count(7, 2) : (struct cpuid){};
-    auto eax8000_0001 = max_ext_leaf >= 0x8000'0001 ? cpuid(0x8000'0001) : (struct cpuid){};
+    auto eax8000_0001 =
+        max_ext_leaf >= 0x8000'0001 ? cpuid(0x8000'0001) : (struct cpuid){};
 
     x86_feature_array[0] = eax1.ecx;
     x86_feature_array[1] = eax1.edx;
@@ -96,10 +97,14 @@ void init_cpu_feature_array(void) {
     bool has_lwp = false;
 
     if (has_xsave) {
-        auto eax0D_ecx0 = max_default_leaf >= 0x0D ? cpuid_count(0x0D, 0) : (struct cpuid){};
-        auto eax0D_ecx1 = max_default_leaf >= 0x0D ?  cpuid_count(0x0D, 1)  : (struct cpuid){};
-        uint64_t xcr0_supported = ((uint64_t)eax0D_ecx0.eax) | (((uint64_t)eax0D_ecx0.edx)<<32);
-        uint64_t xss_supported = ((uint64_t)eax0D_ecx1.ecx) | (((uint64_t)eax0D_ecx1.edx)<<32);
+        auto eax0D_ecx0 =
+            max_default_leaf >= 0x0D ? cpuid_count(0x0D, 0) : (struct cpuid){};
+        auto eax0D_ecx1 =
+            max_default_leaf >= 0x0D ? cpuid_count(0x0D, 1) : (struct cpuid){};
+        uint64_t xcr0_supported =
+            ((uint64_t)eax0D_ecx0.eax) | (((uint64_t)eax0D_ecx0.edx) << 32);
+        uint64_t xss_supported =
+            ((uint64_t)eax0D_ecx1.ecx) | (((uint64_t)eax0D_ecx1.edx) << 32);
         x86_feature_array[32] = eax0D_ecx0.eax;
         x86_feature_array[33] = eax0D_ecx0.edx;
         x86_feature_array[34] = eax0D_ecx1.eax;
@@ -136,9 +141,11 @@ void init_cpu_feature_array(void) {
         x86_feature_array[7] &= ~(1 << 21);
 
     if (has_avx10) {
-        auto eax24_ecx0 = max_default_leaf >= 0x24 ? cpuid_count(0x24, 0) : (struct cpuid){};
+        auto eax24_ecx0 =
+            max_default_leaf >= 0x24 ? cpuid_count(0x24, 0) : (struct cpuid){};
         auto max_eax24_sub = eax24_ecx0.eax;
-        auto eax24_ecx1 = max_eax24_sub >= 1 ? cpuid_count(0x24, 1) : (struct cpuid){};
+        auto eax24_ecx1 =
+            max_eax24_sub >= 1 ? cpuid_count(0x24, 1) : (struct cpuid){};
         x86_feature_array[16] = eax24_ecx0.ebx;
 
         bool has_version2 = (eax24_ecx0.ebx & 0xFF) >= 2;
@@ -146,28 +153,28 @@ void init_cpu_feature_array(void) {
         x86_feature_array[17] = eax24_ecx1.ecx | (has_version2 << 2);
     }
 
-    if(!has_pku)
+    if (!has_pku)
         x86_feature_array[2] &= ~(0b11 << 3);
 
-    if(!has_cet_s || !has_cet_u) {
+    if (!has_cet_s || !has_cet_u) {
         x86_feature_array[2] &= ~(1 << 7);
         x86_feature_array[7] &= ~(1 << 18);
     }
 
-    if(!has_pt) {
+    if (!has_pt) {
         x86_feature_array[4] &= ~(1 << 25);
     }
 
-    if(!has_uintr) {
+    if (!has_uintr) {
         x86_feature_array[3] &= ~(1 << 5);
     }
 
-    if(!has_lbr)
+    if (!has_lbr)
         x86_feature_array[3] &= ~(1 << 19);
 
-    if(!has_pasid)
+    if (!has_pasid)
         x86_feature_array[2] &= ~(1 << 29);
 
-    if(!has_lwp)
+    if (!has_lwp)
         x86_feature_array[13] &= ~(1 << 15);
 }

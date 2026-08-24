@@ -163,7 +163,8 @@ void print_ucontext(const ucontext_t *context) {
     // printf("\tDR2 = %.16p\tDR3 = %.16p\r\n", context->dregs[2],
     //        context->dregs[3]);
     // uintptr_t dr6 = (uintptr_t)context->dregs[4];
-    // printf("\tDR6 = %#.16lX [BP0 = %X, BP1 = %X, BP2 = %X, BP3 = %X, BLD = %X, "
+    // printf("\tDR6 = %#.16lX [BP0 = %X, BP1 = %X, BP2 = %X, BP3 = %X, BLD =
+    // %X, "
     //        "BD = %X, BS = %X, BT = %X, RTM = %X]\r\n",
     //        dr6, test_flag(dr6, 0), test_flag(dr6, 1), test_flag(dr6, 2),
     //        test_flag(dr6, 3), test_flag(dr6, 11), test_flag(dr6, 13),

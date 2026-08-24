@@ -61,7 +61,7 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
     else
         printf("Got Interrupt %X)\r\n", irq);
 
-    if(irq != EXCEPT_BP)
+    if (irq != EXCEPT_BP)
         print_ucontext(context);
 
     if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 &&
@@ -169,8 +169,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     stdout = &stdout_fd;
     stdout->data = ft_ctx;
     stdout->write = stdout_handler;
-
-    
 
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";

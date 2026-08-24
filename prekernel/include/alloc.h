@@ -9,7 +9,7 @@ typedef struct dual_address {
 } dual_address_t;
 
 // TODO: remove these.
-// 
+//
 // These exist for the limine pre-kernel to try (and fail)
 // to update the memory map. Eventual plan is for common pre-kernel code to
 // generate the kernel memory map using some interface with the

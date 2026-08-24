@@ -1,9 +1,9 @@
 #include "exceptions.h"
 #include <gdt.h>
+#include <memory.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <memory.h>
 
 typedef struct GDT_Descriptor {
     _Alignas(8) uint16_t pad[3];
@@ -14,11 +14,10 @@ typedef struct GDT_Descriptor {
 typedef struct TSS {
     uint32_t null;
     uint32_t reserved;
-    void* rsps[3];
-    void* reservedist;
-    void* ist[7];
+    void *rsps[3];
+    void *reservedist;
+    void *ist[7];
 } x86_tss_t;
-
 
 static struct {
     _Alignas(4096) uint8_t data[4096];
@@ -28,7 +27,9 @@ static struct {
     _Alignas(4096) uint8_t data[8192];
 } __pf_stack;
 
-x86_tss_t tss = {.rsps = {nullptr, nullptr, nullptr}, .ist = {&__df_stack, &__pf_stack, nullptr, nullptr, nullptr, nullptr, nullptr}};
+x86_tss_t tss = {.rsps = {nullptr, nullptr, nullptr},
+                 .ist = {&__df_stack, &__pf_stack, nullptr, nullptr, nullptr,
+                         nullptr, nullptr}};
 
 gdt_entry_t gdt_entries[32] = {
     {},
@@ -65,7 +66,7 @@ static void load_gdt(void) {
     gdt_descriptor_t desc = {.limit = sizeof(gdt_entries) - 1,
                              .gdt = gdt_entries};
 
-    void* v = ((char*)&tss)+4;
+    void *v = ((char *)&tss) + 4;
 
     uintptr_t tss_ptr = (uintptr_t)v;
     gdt_entries[8].base_lo = tss_ptr;
