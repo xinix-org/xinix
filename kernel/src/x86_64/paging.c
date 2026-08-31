@@ -5,6 +5,7 @@
 #include <paging.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 page_table_t *kernel_pml4t;
 
@@ -128,11 +129,11 @@ void *add_to_hhdm(page_table_t *page_table, uint64_t phys_addr,
                 break;
             } else {
                 // we need to go deeper
-                // TODO
-                printf("TODO: add_to_hhdm bifurcate not-present page "
-                       "(cur_level=%X, granularity=%X)\r\n",
-                       cur_level, granularity);
-                hcf(0, CURRENT());
+                page_table_t *new_table = aligned_alloc(0x1000, sizeof(page_table_t));
+                memset(new_table, 0, sizeof(page_table_t));
+                *entry_p = (uint64_t)new_table - hhdm_off;
+                set_flags(entry_p, mem_flags, true);
+                *entry_p |= 1; // mark present, and descend
             }
         }
     }
