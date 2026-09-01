@@ -9,6 +9,10 @@ volatile lapic_t *lapic;
 volatile ioapic_t *ioapics;
 int num_ioapics;
 
+static uint32_t unaligned_u16(uint8_t *data) {
+    return (uint32_t)data[0] | ((uint32_t)data[1] << 8);
+}
+
 static uint32_t unaligned_u32(uint8_t *data) {
     return (uint32_t)data[0] | ((uint32_t)data[1] << 8) |
            ((uint32_t)data[2] << 16) | ((uint32_t)data[3] << 24);
@@ -57,7 +61,7 @@ void load_madt(madt_header_t *madt_p) {
         case 0:
             printf("TODO: processor local APIC\r\n");
             break;
-        case 1:
+        case 1: {
             ioapics[num_ioapics].id = byte_reader[pos + 2];
             uint32_t ioapic_addr = unaligned_u32(&byte_reader[pos + 4]);
             ioapics[num_ioapics].register_base = add_to_hhdm(
@@ -70,6 +74,25 @@ void load_madt(madt_header_t *madt_p) {
                    ioapics[num_ioapics].global_system_interrupt_base);
             num_ioapics += 1;
             break;
+        }
+        case 2: {
+            uint8_t bus = byte_reader[pos + 2];
+            uint8_t source = byte_reader[pos + 3];
+            uint32_t gsint = unaligned_u32(&byte_reader[pos + 4]);
+            uint16_t flags = unaligned_u16(&byte_reader[pos + 8]);
+            printf(
+                "TODO: remap bus=%02X, source=%02X, gsint=%08X, flags=%04X\r\n",
+                bus, source, gsint, flags);
+            break;
+        }
+        case 4: {
+            uint8_t uid = byte_reader[pos + 2];
+            uint16_t flags = unaligned_u16(&byte_reader[pos + 3]);
+            uint8_t lint = byte_reader[pos + 5];
+            printf("TODO: lapic nmi uid=%02X, flags=%04X, lint=%02X\r\n", uid,
+                   flags, lint);
+            break;
+        }
         default:
             printf("unrecognized MADT entry type %X\r\n", entry_type);
             break;
