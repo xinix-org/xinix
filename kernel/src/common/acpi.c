@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+volatile lapic_t *lapic;
+
 void print_sdt_header(sdt_header_t *sdt_p) {
     printf("Table %.4s\r\n", sdt_p->signature);
     printf("OEMID: %.6s -- Table ID: %.8s -- Revision: %08X\r\n", sdt_p->oemid,
@@ -15,10 +17,10 @@ void print_sdt_header(sdt_header_t *sdt_p) {
 
 void load_madt(madt_header_t *madt_p) {
     printf("local APIC address: %#.8X\r\n", madt_p->local_apic_address);
-    void *lapic = add_to_hhdm(kernel_pml4t, madt_p->local_apic_address,
-                              PAGE_GRANULARITY_4KB, PROT_WRITE);
-    printf("LAPIC ID: %#.8X\r\n", *(uint32_t *)(lapic + 0x20));
-    printf("LAPIC Version: %#.8X\r\n", *(uint32_t *)(lapic + 0x30));
+    lapic = add_to_hhdm(kernel_pml4t, madt_p->local_apic_address,
+                        PAGE_GRANULARITY_4KB, PROT_WRITE);
+    printf("LAPIC ID: %#.8X\r\n", lapic->lapic_id);
+    printf("LAPIC Version: %#.8X\r\n", lapic->lapic_version);
     size_t pos = sizeof(madt_header_t);
     uint8_t *byte_reader = (uint8_t *)madt_p;
     while (pos < madt_p->header.length) {
