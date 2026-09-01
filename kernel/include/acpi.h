@@ -75,4 +75,12 @@ static_assert(offsetof(lapic_t, reserved3F0) == 0x3F0);
 
 extern volatile lapic_t *lapic; // TODO: thread-local
 
+typedef struct ioapic {
+    void *register_base;
+    int id;
+    int global_system_interrupt_base;
+} ioapic_t;
+
+extern int num_ioapics;
+
 extern void load_system_descriptor_tables(void);
