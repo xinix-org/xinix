@@ -26,6 +26,8 @@ enum exception_id : int {
     EXCEPT_HV = 28,
     EXCEPT_VC = 29,
     EXCEPT_SC = 30,
+
+    IRQ_KB = 0x41,
 };
 
 #define EXCEPTION_NAME_ID(name)                                                \

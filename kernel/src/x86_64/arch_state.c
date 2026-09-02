@@ -98,11 +98,10 @@ static void load_gdt(void) {
     tss.ist[2] = aligned_alloc(4096, 16384);
 }
 
-// TODO: This is x86-64 specific. This should be moved.
 typedef struct IDT_Entry {
     _Alignas(16) uint16_t offset_low;
     uint16_t segment;
-    uint8_t ist;
+    uint8_t ist; // interrupt stack table
     uint8_t type_and_perms;
     uint16_t offset_mid;
     uint32_t offset_high;

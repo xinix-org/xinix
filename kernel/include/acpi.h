@@ -81,6 +81,23 @@ typedef struct ioapic {
     int global_system_interrupt_base;
 } ioapic_t;
 
+typedef enum ioredtbl_delivery_mode {
+    IOREDTBL_DELIVERY_FIXED = 0b000,
+    IOREDTBL_DELIVERY_LOWEST_PRIORITY = 0b001,
+    IOREDTBL_DELIVERY_SMI = 0b010,
+    IOREDTBL_DELIVERY_NMI = 0b100,
+    IOREDTBL_DELIVERY_INIT = 0b101,
+    IOREDTBL_DELIVERY_EXTINT = 0b111,
+} ioredtbl_delivery_mode_t;
+
 extern int num_ioapics;
 
 extern void load_system_descriptor_tables(void);
+
+// Low-level IOAPIC I/O; should typically only be used internally
+extern void write_ioapic(uint8_t ioapic_id, uint32_t addr, uint32_t val);
+
+extern void write_io_redirect(uint8_t irq, uint8_t int_id,
+                              ioredtbl_delivery_mode_t delivery_mode,
+                              bool destination_is_logical, bool active_low,
+                              bool level_triggered, uint8_t destination);

@@ -164,7 +164,7 @@ isr_stub\n:
 .macro IDTEntry n:req
   .word 0 /* offset_low, filled at runtime */
   .word 0b00101000 /* Limine puts a 64-bit identity-mapped code segment in GDT index 5 */
-  .byte 0 /* IST */
+  .byte 0 /* IST: interrupt stack table */
   .byte 0x8E /* gate type; always using trap gate for now */
   .word 0 /* offset_mid, filled at runtime */
   .long 0 /* offset_high, filled at runtime */

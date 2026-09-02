@@ -1,4 +1,5 @@
 #include "arch.h"
+#include "cpu.h"
 #include "random.h"
 
 #include "sysresult.h"
@@ -53,8 +54,18 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
     *want_comma = true;
 }
 
+void keyboard_irq(void) {
+    int scancode = inb(0x60);
+    printf("TODO: impl kbd. Scancode: %02X\r\n", scancode);
+    lapic->end_of_interrupt_register.value = 0;
+}
+
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
+    if (irq == IRQ_KB) {
+        keyboard_irq();
+        return context;
+    }
     const char *name = exception_name(irq);
     if (name)
         printf("Got Exception #%s\r\n", name);
@@ -111,6 +122,11 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
 extern void init_context(kcontext_t *ctx);
 
 extern void init_cpuid_array();
+
+void install_keyboard_irq(void) {
+    write_io_redirect(1, IRQ_KB, IOREDTBL_DELIVERY_FIXED, false, false, false,
+                      0);
+}
 
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
@@ -282,6 +298,13 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     }
 
     load_system_descriptor_tables();
+
+    lapic->task_priority_register.value = 0;
+    lapic->destination_format_register.value = 0xFF000000;
+    install_keyboard_irq();
+
+    // Enable interrupts; should be abstracted out
+    __asm__ volatile("sti");
 
     union {
         uint8_t buf[16];

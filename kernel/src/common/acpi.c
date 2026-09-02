@@ -137,3 +137,34 @@ void load_system_descriptor_tables(void) {
         load_rsdt();
     }
 }
+
+uint32_t read_ioapic(uint8_t ioapic_id, uint32_t addr) {
+    volatile uint32_t *register_base = ioapics[ioapic_id].register_base;
+    *(register_base) = addr;
+    uint32_t result = *(register_base + 4);
+    return result;
+}
+
+void write_ioapic(uint8_t ioapic_id, uint32_t addr, uint32_t val) {
+    read_ioapic(ioapic_id, addr);
+    volatile uint32_t *register_base = ioapics[ioapic_id].register_base;
+    *(register_base) = addr;
+    *(register_base + 4) = val;
+}
+
+void write_io_redirect(uint8_t irq, uint8_t int_id,
+                       ioredtbl_delivery_mode_t delivery_mode,
+                       bool destination_is_logical, bool active_low,
+                       bool level_triggered, uint8_t destination) {
+    // TODO: this function currently assumes we only have one IOAPIC. This is
+    // generally an okay assumption, but the function should be able to support
+    // multiple in the future.
+    uint32_t reg_base = 0x10 + (uint32_t)irq * 2;
+    uint32_t low_reg_value = (level_triggered ? 0x8000 : 0) |
+                             (active_low ? 0x2000 : 0) |
+                             (destination_is_logical ? 0x0800 : 0) |
+                             ((uint32_t)delivery_mode << 8) | (uint32_t)int_id;
+    uint32_t high_reg_value = destination << 24;
+    write_ioapic(0, reg_base, low_reg_value);
+    write_ioapic(0, reg_base + 1, high_reg_value);
+}

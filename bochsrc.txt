@@ -1,0 +1,2 @@
+ata1-slave: type=cdrom, path="./target/xinix-dev.iso", status=inserted
+boot: cdrom
