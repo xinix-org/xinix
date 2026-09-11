@@ -1,5 +1,6 @@
 #include "arch.h"
 #include "cpu.h"
+#include "keyboard.h"
 #include "random.h"
 
 #include "sysresult.h"
@@ -56,7 +57,7 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
 
 void keyboard_irq(void) {
     int scancode = inb(0x60);
-    printf("TODO: impl kbd. Scancode: %02X\r\n", scancode);
+    kbd_process_scancode_byte(scancode);
     lapic->end_of_interrupt_register.value = 0;
 }
 
