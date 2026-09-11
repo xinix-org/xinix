@@ -58,7 +58,7 @@ static void print_sreg(const char *name, uint16_t sreg, uint16_t ldtr) {
 
         printf("\t%s = %.4X [%s, base = %.16llX, limit = %.8X, P = %X, "
                "DPL=%X]\r\n",
-               name, sreg, segty, present, dpl);
+               name, sreg, base, limit, segty, present, dpl);
     } else {
         auto a = test_flag(ent->access, 0);
         auto rw = test_flag(ent->access, 1);
