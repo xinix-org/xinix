@@ -1,6 +1,9 @@
 #include "arch.h"
 #include "cpu.h"
+
 #include "keyboard.h"
+#include "debugging.h"
+
 #include "random.h"
 
 #include "sysresult.h"
@@ -73,23 +76,32 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
     else
         printf("Got Interrupt %X)\r\n", irq);
 
-    if (irq != EXCEPT_BP)
-        print_ucontext(context);
+    print_ucontext(context);
 
-    if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0 &&
-        (size_t)context->gregs[3] == DEBUG_MAGIC &&
+    if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0) {
+
+        if((size_t)context->gregs[3] == DEBUG_MAGIC &&
         (size_t)context->gregs[15] == DEBUG_MAGIC2) {
-        printf("\r\n");
-        printf("Debug Trap from %s (%X)\r\n", context->gregs[6],
-               context->gregs[1]);
-        printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
-        printf("Function %s (%p)\r\n\r\n", context->gregs[2],
-               context->gregs[0]);
+            printf("\r\n");
+            printf("Debug Trap from %s (%X)\r\n", context->gregs[6],
+                context->gregs[1]);
+            printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
+            printf("Function %s (%p)\r\n\r\n", context->gregs[2],
+                context->gregs[0]);
+        }
+        handle_kernel_debug(context, true);
+    } else if (irq == EXCEPT_DB) {
+        if(!((uintptr_t)context->dregs[4] & (1 << 11))) {
+            context->dregs[4] = (void*)(((uintptr_t)context->dregs[4]) | (1 << 11));
+        } else {
+            handle_kernel_debug(context, false);
+        }
     }
 
     if (irq == 0x20) {
         context->gregs[0] = "Hello from Beyond the Interrupt!";
     }
+
 
     return context;
 }

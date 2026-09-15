@@ -38,7 +38,9 @@ static void print_sreg(const char *name, uint16_t sreg, uint16_t ldtr) {
     auto dpl = (ent->access >> 5) & 3;
     auto present = test_flag(ent->access, 7);
 
-    if (!sys) {
+    if(!(sreg & ~7)) {
+        printf("\t%s = %.4X [null]\r\n", name, sreg);
+    } else if (!sys) {
         base |= (uint64_t)(ent[1].sys_base_ext) << 32;
         const char *segty;
         switch ((enum system_segment_type)ent->access & 0xF) {
@@ -58,7 +60,7 @@ static void print_sreg(const char *name, uint16_t sreg, uint16_t ldtr) {
 
         printf("\t%s = %.4X [%s, base = %.16llX, limit = %.8X, P = %X, "
                "DPL=%X]\r\n",
-               name, sreg, base, limit, segty, present, dpl);
+               name, sreg, segty, base, limit, present, dpl);
     } else {
         auto a = test_flag(ent->access, 0);
         auto rw = test_flag(ent->access, 1);
@@ -125,14 +127,16 @@ void print_ucontext(const ucontext_t *context) {
         test_flag(context->rflags, 14), test_flag(context->rflags, 18),
         test_flag(context->rflags, 21));
 
-    print_sreg("ES", context->sregs[0], context->sregs[7]);
-    print_sreg("CS", context->sregs[1], context->sregs[7]);
-    print_sreg("DS", context->sregs[2], context->sregs[7]);
-    print_sreg("SS", context->sregs[3], context->sregs[7]);
-    print_sreg("FS", context->sregs[4], context->sregs[7]);
-    print_sreg("GS", context->sregs[5], context->sregs[7]);
+
+    print_sreg("ES ", context->sregs[0], context->sregs[7]);
+    print_sreg("CS ", context->sregs[1], context->sregs[7]);
+    print_sreg("DS ", context->sregs[2], context->sregs[7]);
+    print_sreg("SS ", context->sregs[3], context->sregs[7]);
+    print_sreg("FS ", context->sregs[4], context->sregs[7]);
+    print_sreg("GS ", context->sregs[5], context->sregs[7]);
     print_sreg("TSS", context->sregs[6], 0);
     print_sreg("LDT", context->sregs[7], 0);
+   
 
     printf("\r\n");
 

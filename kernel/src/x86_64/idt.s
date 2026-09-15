@@ -90,6 +90,18 @@ isr_stub\n:
   xsave64 [rcx]
   1:
   cld
+  mov rax, dr0
+  mov rcx, dr1
+  mov rbx, dr2
+  mov rsi, dr3
+  mov r8, dr6
+  mov r9, dr7
+  mov [rdi+200], rax
+  mov [rdi+208], rcx
+  mov [rdi+216], rbx
+  mov [rdi+224], rsi
+  mov [rdi+232], r8
+  mov [rdi+240], r9
   mov esi, \n
   mov rbp, rsp
   and rsp, ~15
@@ -101,6 +113,18 @@ isr_stub\n:
   mov rsp, rbp
   
   mov rdi, rax
+  mov rax, [rdi+200]
+  mov rcx, [rdi+208]
+  mov rdx, [rdi+216]
+  mov rsi, [rdi+224]
+  mov r8, [rdi+232]
+  mov r9, [rdi+240]
+  mov dr0, rax
+  mov dr1, rcx
+  mov dr2, rdx
+  mov dr3, rsi
+  mov dr6, r8
+  mov dr7, r9
   lea rcx, [rdi+512]
   cmp qword ptr [rcx-8], 512
   jb 1f
