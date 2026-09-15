@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include "event.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -100,6 +101,7 @@ void kbd_process_scancode_byte(uint8_t input) {
     } else {
         scan_state = transition.next_state;
         if (transition.scan_code) {
+            push_event(EVENT_KEY | transition.scan_code);
             printf("[%04X]", transition.scan_code);
         }
     }
