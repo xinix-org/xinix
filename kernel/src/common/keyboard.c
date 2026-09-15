@@ -26,7 +26,7 @@ typedef struct kbd_scan_transition {
 #define X {KB_SCAN_ERROR}
 
 // clang-format off
-static kbd_scan_transition_t kbd_state_machine[NUM_KB_SCAN_STATES][256] = {
+static const kbd_scan_transition_t KBD_STATE_MACHINE[NUM_KB_SCAN_STATES][256] = {
     // KB_SCAN_INIT
     {
         X,                     KD(KEY_SCAN_ESCAPE),    KD(KEY_SCAN_1),               KD(KEY_SCAN_2),              KD(KEY_SCAN_3),       KD(KEY_SCAN_4),            KD(KEY_SCAN_5),           KD(KEY_SCAN_6),               // 00-07
@@ -89,9 +89,23 @@ static kbd_scan_transition_t kbd_state_machine[NUM_KB_SCAN_STATES][256] = {
 #undef U
 #undef X
 
+static const char SCANCODE_TO_CHAR_MAP_UNSHIFTED[NUM_KEY_SCAN_CODES] = {
+    0,   '`', '\\', '[', ']', ',', '0',  '1', '2', '3',  '4', '5', '6',
+    '7', '8', '9',  '=', 0,   0,   0,    'a', 'b', 'c',  'd', 'e', 'f',
+    'g', 'h', 'i',  'j', 'k', 'l', 'm',  'n', 'o', 'p',  'q', 'r', 's',
+    't', 'u', 'v',  'w', 'x', 'y', 'z',  '-', '.', '\'', ';', '/', 0,
+    0,   0,   0,    0,   0,   0,   '\n', 0,   0,   0,    0,   ' ', '\t'};
+
+#define QUEUE_LEN 256 // should be a power of 2 for better performance
+int queue_head = 0, queue_tail = 0;
+kbd_scan_code_t queue[QUEUE_LEN];
+// queue_head == queue_tail ==> empty queue
+// (queue_head + 1) % QUEUE_LEN == queue_tail == full queue
+// one extra space is left to disambiguate
+
 void kbd_process_scancode_byte(uint8_t input) {
     static kbd_scan_state_t scan_state = KB_SCAN_INIT;
-    kbd_scan_transition_t transition = kbd_state_machine[scan_state][input];
+    kbd_scan_transition_t transition = KBD_STATE_MACHINE[scan_state][input];
     if (transition.next_state == KB_SCAN_UNKNOWN) {
         printf("[unrecognized scancode: state %X key %02X]", scan_state, input);
         scan_state = KB_SCAN_INIT;
@@ -102,7 +116,24 @@ void kbd_process_scancode_byte(uint8_t input) {
         scan_state = transition.next_state;
         if (transition.scan_code) {
             push_event(EVENT_KEY | transition.scan_code);
-            printf("[%04X]", transition.scan_code);
+            if ((queue_head + 1) % QUEUE_LEN == queue_tail) {
+                printf("[keyboard queue overrun; insert annoying PC speaker "
+                       "beep here]");
+            } else {
+                queue[queue_head] = transition.scan_code;
+                queue_head += 1;
+            }
         }
     }
+}
+
+kbd_scan_code_t kbd_poll_key() {
+    if (queue_head != queue_tail) {
+        return queue[queue_tail++];
+    }
+    return 0; // no key
+}
+
+char kbd_get_char_for_scancode(kbd_scan_code_t code) {
+    return SCANCODE_TO_CHAR_MAP_UNSHIFTED[code];
 }

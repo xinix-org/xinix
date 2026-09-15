@@ -479,6 +479,11 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
         }
         // and now, the actual printing
         switch (*cursor) {
+        case 'c': {
+            auto ch = (char)va_arg(vlist, int);
+            // TODO: use the flags
+            WRITE_CHECKED(stream, 1, &ch, bytes_printed);
+        } break;
         case 'X': {
             unsigned long long value =
                 read_unsigned_int(length_spec, length_extra, vlist);
@@ -532,7 +537,7 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
             WRITE_CHECKED(stream, len, (const char *)string.string_data,
                           bytes_printed);
         } break;
-        case 'p':
+        case 'p': {
             const void *ptr = va_arg(vlist, const void *);
             // TODO: Flags
             if (!ptr)
@@ -543,7 +548,7 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
                     print_unsigned_int(val, -1, "0x", 2, UPPER_HEX, stream,
                                        flags | POUND_FLAG, min_width, 16);
             }
-            break;
+        } break;
         case 'r': {
             if (length_spec == NO_LEN)
                 length_spec = LONG_LEN;

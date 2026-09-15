@@ -203,7 +203,12 @@ typedef enum kbd_scan_code : uint16_t {
     KEY_SCAN_F34,
     KEY_SCAN_F35,
 
+    NUM_KEY_SCAN_CODES,
+
     KEY_SCAN_RELEASE = 0x8000
 } kbd_scan_code_t;
 
 void kbd_process_scancode_byte(uint8_t input);
+
+kbd_scan_code_t kbd_poll_key(void);
+char kbd_get_char_for_scancode(kbd_scan_code_t code);

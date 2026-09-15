@@ -1,8 +1,8 @@
 #include "arch.h"
 #include "cpu.h"
 
-#include "keyboard.h"
 #include "debugging.h"
+#include "keyboard.h"
 
 #include "random.h"
 
@@ -80,19 +80,20 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
 
     if (irq == EXCEPT_BP && (context->sregs[1] & 3) == 0) {
 
-        if((size_t)context->gregs[3] == DEBUG_MAGIC &&
-        (size_t)context->gregs[15] == DEBUG_MAGIC2) {
+        if ((size_t)context->gregs[3] == DEBUG_MAGIC &&
+            (size_t)context->gregs[15] == DEBUG_MAGIC2) {
             printf("\r\n");
             printf("Debug Trap from %s (%X)\r\n", context->gregs[6],
-                context->gregs[1]);
+                   context->gregs[1]);
             printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
             printf("Function %s (%p)\r\n\r\n", context->gregs[2],
-                context->gregs[0]);
+                   context->gregs[0]);
         }
         handle_kernel_debug(context, true);
     } else if (irq == EXCEPT_DB) {
-        if(!((uintptr_t)context->dregs[4] & (1 << 11))) {
-            context->dregs[4] = (void*)(((uintptr_t)context->dregs[4]) | (1 << 11));
+        if (!((uintptr_t)context->dregs[4] & (1 << 11))) {
+            context->dregs[4] =
+                (void *)(((uintptr_t)context->dregs[4]) | (1 << 11));
         } else {
             handle_kernel_debug(context, false);
         }
@@ -101,7 +102,6 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
     if (irq == 0x20) {
         context->gregs[0] = "Hello from Beyond the Interrupt!";
     }
-
 
     return context;
 }
@@ -349,5 +349,27 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     }
     printf("\r\n\r\n");
 
-    hcf(0, CURRENT());
+    printf("prompt> ");
+    while (1) {
+        kbd_scan_code_t scan_code = kbd_poll_key();
+        if (scan_code == 0) {
+            spin_loop_hint();
+            continue;
+        }
+        if (scan_code & KEY_SCAN_RELEASE) {
+            continue; // ignore keyup
+        }
+        if (scan_code == KEY_SCAN_BACKSPACE) {
+            printf("\x08 \x08"); // terrible backspace handling; TODO do a line
+                                 // buffer
+        } else if (scan_code == KEY_SCAN_ENTER) {
+            printf("\r\n");
+        } else {
+            char ch = kbd_get_char_for_scancode(scan_code);
+            if (ch) {
+                printf("%c", ch);
+            }
+        }
+    }
+    // hcf(0, CURRENT());
 }

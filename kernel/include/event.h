@@ -24,5 +24,6 @@ enum EventKinds : uint32_t {
 #define TIMER(dt) (EVENT_TIMER | (dt))
 
 /// Writes `r_event` to the event buffer.
-/// Event should be constructed using `KEY`, `MOUSE_BUTTON`, `MOUSE_MOTION`, or TIMER`
+/// Event should be constructed using `KEY`, `MOUSE_BUTTON`, `MOUSE_MOTION`, or
+/// TIMER`
 void push_event(uint32_t r_event);
