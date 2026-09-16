@@ -17,3 +17,9 @@
 #else
 #define _ATTRIBUTE_UNSEQ
 #endif
+
+#if __has_c_attribute(reproducible)
+#define _ATTRIBUTE_REPRODUCIBLE [[reproducible]]
+#else
+#define _ATTRIBUTE_REPRODUCIBLE
+#endif
