@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 typedef struct {
-    uint64_t uuid_lo;
+    _Alignas(16) uint64_t uuid_lo;
     uint64_t uuid_hi;
 } uuid;
 
@@ -11,3 +11,8 @@ typedef struct {
     ((uuid){.uuid_lo = (UINT64_C(_mid3) << 48) | UINT64_C(_lo),                \
             .uuid_hi = (UINT64_C(_hi) << 32) | (UINT64_C(_mid1) << 16) |       \
                        UINT64_C(_mid2)})
+
+#define NIL_UUID ((uuid){})
+#define FULL_UUID ((uuid){.uuid_lo = ~UINT64_C(0), .uuid_hi = ~UINT64_C(0)})
+
+

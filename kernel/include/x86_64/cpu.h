@@ -31,3 +31,18 @@ static inline void outw(uint16_t port, uint16_t val) {
 static inline void outl(uint16_t port, uint32_t val) {
     __asm__ volatile("outl %l0, %w1" : : "a"(val), "Nd"(port) : "memory");
 }
+
+
+static inline unsigned long read_cr4(void) {
+    unsigned long ret;
+    __asm__ volatile("mov %0, %%cr4" : "=r"(ret));
+
+    return ret;
+}
+
+#define CR4_OSFXSR (1UL << 9)
+#define CR4_OSXSAVE (1UL << 18)
+
+static inline void write_cr4(unsigned long val) {
+    __asm__ volatile("mov %%cr4, %0" : : "r"(val) : "memory");
+}

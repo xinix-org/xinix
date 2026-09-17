@@ -34,6 +34,8 @@ inline static const char *sysresult_describe(sysresult_t res) {
         return "Elf Image Contains Writeable Text Segment";
     case ERR_IMAGE_INVALID_RELOC:
         return "Unexpected Dynamic Relocation";
+    case ERR_INSUFFICIENT_MEMORY:
+        return "Insufficient System Memory";
     default:
         return nullptr;
     }

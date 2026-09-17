@@ -9,8 +9,15 @@ run: build
         -M q35 \
         -cdrom target/xinix-dev.iso \
         -boot d \
+        -m 2G
+
+run-trace-exceptions: build
+    qemu-system-x86_64 \
+        -M q35 \
+        -cdrom target/xinix-dev.iso \
+        -boot d \
         -m 2G \
-        -d int
+        -d int 2> exceptions.err
 
 run-cpu-host: build
     qemu-system-x86_64 \
@@ -27,8 +34,7 @@ debug: build
         -cdrom target/xinix-dev.iso \
         -boot d \
         -m 2G \
-        -s -S \
-        -d int &
+        -s -S &
     gdb -x debug-kernel.gdb
 
 debug-prekernel: build
@@ -37,8 +43,7 @@ debug-prekernel: build
         -cdrom target/xinix-dev.iso \
         -boot d \
         -m 2G \
-        -s -S \
-        -d int &
+        -s -S &
     gdb -x debug-prekernel.gdb
 
 format:

@@ -3,26 +3,8 @@
 
 #include <bits/feat_test.h>
 
-struct cpuid {
-    uint32_t eax;
-    uint32_t ecx;
-    uint32_t edx;
-    uint32_t ebx;
-};
-
-static struct cpuid cpuid_count(uint32_t leaf,
-                                uint32_t subleaf) _ATTRIBUTE_UNSEQ {
-    struct cpuid ret = {.eax = leaf, .ecx = subleaf};
-    __asm__ inline("cpuid"
-                   : "+a"(ret.eax), "+c"(ret.ecx), "=d"(ret.edx),
-                     "=b"(ret.ebx));
-
-    return ret;
-}
-
-static struct cpuid cpuid(uint32_t leaf) _ATTRIBUTE_UNSEQ {
-    return cpuid_count(leaf, 0);
-}
+#define __X86_CPU_IMPL_NO_WANT_CONST_FEATURE_ARRAY
+#include <cpuid.h>
 
 uint32_t x86_feature_array[38];
 
@@ -108,6 +90,7 @@ void init_cpu_feature_array(void) {
         x86_feature_array[32] = eax0D_ecx0.eax;
         x86_feature_array[33] = eax0D_ecx0.edx;
         x86_feature_array[34] = eax0D_ecx1.eax;
+        x86_feature_array[35] = eax0D_ecx0.ecx;
         x86_feature_array[36] = eax0D_ecx1.ecx;
         x86_feature_array[37] = eax0D_ecx1.edx;
         has_avx = (xcr0_supported & (1 << 2));

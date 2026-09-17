@@ -1,13 +1,20 @@
+#include "context.h"
 #include "paging.h"
 #include <acpi.h>
 #include <auxv.h>
 #include <memory.h>
 #include <stdio.h>
 #include <string.h>
+#include <pointers.h>
 
-volatile lapic_t *lapic;
 volatile ioapic_t *ioapics;
 int num_ioapics;
+
+fadt_t* fadt;
+
+volatile facs_t* facs;
+
+dsdt_t* dsdt;
 
 static uint32_t unaligned_u16(uint8_t *data) {
     return (uint32_t)data[0] | ((uint32_t)data[1] << 8);
@@ -29,10 +36,12 @@ void print_sdt_header(sdt_header_t *sdt_p) {
 
 void load_madt(madt_header_t *madt_p) {
     printf("local APIC address: %#.8X\r\n", madt_p->local_apic_address);
-    lapic = add_to_hhdm(kernel_pml4t, madt_p->local_apic_address,
+    auto kctx = getcontext();
+
+    kctx->lapic = add_to_hhdm(kernel_pml4t, madt_p->local_apic_address,
                         PAGE_GRANULARITY_4KB, PROT_WRITE);
-    printf("LAPIC ID: %#.8X\r\n", lapic->lapic_id);
-    printf("LAPIC Version: %#.8X\r\n\r\n", lapic->lapic_version);
+    printf("LAPIC ID: %#.8X\r\n", kctx->lapic->lapic_id.value);
+    printf("LAPIC Version: %#.8X\r\n\r\n", kctx->lapic->lapic_version.value);
     uint8_t *byte_reader = (uint8_t *)madt_p;
 
     // First pass will count what we need to count; next pass will actually
@@ -101,10 +110,54 @@ void load_madt(madt_header_t *madt_p) {
     }
 }
 
+void load_fadt(fadt_t* fadt_p) {
+    fadt = fadt_p;
+    uint64_t dsdt_paddr;
+    uint64_t facs_paddr;
+    if(fadt_p->fadt_header.revision >= 2 && fadt_p->fadt_header.length >= sizeof(fadt2_t)) {
+        fadt2_t* fadt2_p = (fadt2_t*)fadt_p;
+
+        if (fadt2_p->fadt_xdsdt)
+            dsdt_paddr = fadt2_p->fadt_xdsdt;
+        else
+            dsdt_paddr = fadt_p->fadt_dsdt;
+
+        if(fadt2_p->fadt_xfirmware_ctrl)
+            facs_paddr = fadt2_p->fadt_xfirmware_ctrl;
+        else
+            facs_paddr = fadt_p->fadt_fwctl;
+    } else {
+        dsdt_paddr = fadt_p->fadt_dsdt;
+        facs_paddr = fadt_p->fadt_fwctl;
+    }
+
+    printf("FACS ADDR %#.16w64X\tDSDT ADDR %#.16w64X\r\n", facs_paddr, dsdt_paddr);
+
+    facs = add_to_hhdm(kernel_pml4t, facs_paddr,
+                        PAGE_GRANULARITY_4KB, PROT_WRITE);
+
+    dsdt = add_to_hhdm(kernel_pml4t, dsdt_paddr, 
+                        PAGE_GRANULARITY_4KB, PROT_WRITE);
+
+    size_t dsdt_plen = ((dsdt_paddr & 0x3FF) + dsdt->dsdt_header.length) >> 12;
+    
+    while(dsdt_plen > 0)
+        {
+            dsdt_paddr += 4096;
+            dsdt_plen -= 1;
+            add_to_hhdm(kernel_pml4t, dsdt_paddr + 4096, 
+                        PAGE_GRANULARITY_4KB, PROT_WRITE);
+        }
+
+    dsdt = launder_pointer(dsdt);
+}
+
 void handle_sdt(sdt_header_t *sdt_p) {
     print_sdt_header(sdt_p);
     if (memcmp(sdt_p->signature, "APIC", 4) == 0) {
         load_madt((madt_header_t *)sdt_p);
+    } else if(memcmp(sdt_p->signature, "FACP", 4) == 0) {
+        load_fadt((fadt_t*)sdt_p);
     }
 }
 

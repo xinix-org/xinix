@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+typedef uint64_t paddr_t;
+
 typedef struct [[gnu::aligned(0x1000)]] page_table {
     uint64_t entries[512];
 } page_table_t;
@@ -27,5 +29,5 @@ extern page_table_t *kernel_pml4t;
 page_table_t *clone_page_table(void);
 
 // returns virtual address in HHDM
-void *add_to_hhdm(page_table_t *page_table, uint64_t phys_addr,
+void *add_to_hhdm(page_table_t *page_table, paddr_t phys_addr,
                   page_granularity_t granularity, mem_flags_t mem_flags);

@@ -233,6 +233,70 @@ static constexpr const char LOWER_HEX[16] = "0123456789abcdef";
 static constexpr const char OCT[8] = "01234567";
 static constexpr const char BIN[2] = "01";
 
+static inline size_t print_dec_int(unsigned long long value, int precision, bool is_signed, FILE *restrict stream, int flags,
+                                        int min_width) {
+    char buffer[21];
+
+    if(precision == -1) {
+        precision = 1;
+    }
+
+    char sign = '\0';
+
+    if(is_signed && (value & 0x8000'0000'0000'0000)) {
+        sign = '-';
+        value = -value;
+    } else if(flags & PLUS_FLAG)
+        sign = '+';
+
+    char* bend = buffer+20;
+    char* bpos = bend;
+
+    int real_precision = precision <= 20 ? precision : 20;
+    unsigned extra_precision = precision - real_precision;
+
+    for(; (value != 0) || (real_precision > 0); real_precision--) {
+        uint8_t digit = value % 10;
+        value /= 10;
+
+        *--bpos = digit + '0';
+    }
+
+    size_t total_written = 0;
+
+    unsigned spaces = (precision < min_width)? (min_width - precision) : 0;
+
+    if(flags & ZERO_FLAG) {
+        extra_precision += spaces;
+        spaces = 0;
+    }
+
+    if(sign)
+        spaces--;
+
+    while(spaces > 64) {
+        WRITE_CHECKED(stream, 64, ZEROS, total_written);
+        spaces -= 64;
+    }
+    WRITE_CHECKED(stream, spaces, ZEROS, total_written);
+
+    if(sign)
+        WRITE_CHECKED(stream, 1, &sign, total_written);
+
+    while(extra_precision > 64) {
+        WRITE_CHECKED(stream, 64, ZEROS, total_written);
+        extra_precision -= 64;
+    }
+
+    WRITE_CHECKED(stream, extra_precision, ZEROS, total_written);
+
+    size_t width = bend - bpos;
+
+    WRITE_CHECKED(stream, width, bpos, total_written);
+
+    return total_written;
+}
+
 static inline size_t print_unsigned_int(unsigned long long value, int precision,
                                         const char *prefix, size_t prefix_width,
                                         const char *alpha,
@@ -241,12 +305,12 @@ static inline size_t print_unsigned_int(unsigned long long value, int precision,
     size_t bytes_printed = 0;
     const unsigned radix_bits = stdc_trailing_zeros(radix);
     const unsigned long long mask = (1 << radix_bits) - 1;
-    char buffer[64] = {};
+    char buffer[66] = {};
     if (precision == -1) {
         precision = 1;
     }
     int needed_precision = sizeof(unsigned long long) * (8 / radix_bits) -
-                           stdc_leading_zeros(value) / 4;
+                           stdc_leading_zeros(value) / radix_bits;
     if (needed_precision > precision) {
         precision = needed_precision;
     }
@@ -484,6 +548,19 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
             // TODO: use the flags
             WRITE_CHECKED(stream, 1, &ch, bytes_printed);
         } break;
+        case 'd':
+        case 'i':
+         {
+            auto value = (unsigned long long)read_int(length_spec, length_extra, vlist);
+            bytes_printed = print_dec_int(value, precision, true, stream, flags, min_width);
+         }
+         break;
+        case 'u':
+         {
+            auto value = read_unsigned_int(length_spec, length_extra, vlist);
+            bytes_printed = print_dec_int(value, precision, false, stream, flags, min_width);
+         }
+         break;
         case 'X': {
             unsigned long long value =
                 read_unsigned_int(length_spec, length_extra, vlist);

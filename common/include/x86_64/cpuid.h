@@ -3,6 +3,12 @@
 #include <bits/feat_test.h>
 #include <stdint.h>
 
+#ifdef __X86_CPU_IMPL_NO_WANT_CONST_FEATURE_ARRAY
+#define __X86_CPU_IMPL_CONST
+#else
+#define __X86_CPU_IMPL_CONST const
+#endif
+
 /// Contains the feature cache in the following layout (with feature flags
 /// related to unsupported state components masked out):
 /// * [0]: cpuid[eax=1].ecx
@@ -27,10 +33,31 @@
 /// * [32]: cpuid[eax=0x0D,ecx=0].eax
 /// * [33]: cpuid[eax=0x0D,ecx=0].edx
 /// * [34]: cpuid[eax=0x0D,ecx=1].eax
-/// * [35]: reserved
+/// * [35]: cpuid[eax=0x0D,ecx=0].ecx
 /// * [36]: cpuid[eax=0x0D,ecx=1].ecx
 /// * [37]: cpuid[eax=0x0D,ecx=1].edx
-extern const uint32_t x86_feature_array[];
+extern __X86_CPU_IMPL_CONST uint32_t x86_feature_array[];
+
+struct cpuid {
+    uint32_t eax;
+    uint32_t ecx;
+    uint32_t edx;
+    uint32_t ebx;
+};
+
+static inline struct cpuid cpuid_count(uint32_t leaf,
+                                uint32_t subleaf) _ATTRIBUTE_UNSEQ {
+    struct cpuid ret = {.eax = leaf, .ecx = subleaf};
+    __asm__ inline("cpuid"
+                   : "+a"(ret.eax), "+c"(ret.ecx), "=d"(ret.edx),
+                     "=b"(ret.ebx));
+
+    return ret;
+}
+
+static inline struct cpuid cpuid(uint32_t leaf) _ATTRIBUTE_UNSEQ {
+    return cpuid_count(leaf, 0);
+}
 
 #define X86_CPUID_DEFINE_FEATURE_ENUM(feat, idx, bit)                          \
     _x86_feature_##feat = ((idx << 5) | bit),

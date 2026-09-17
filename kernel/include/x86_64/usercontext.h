@@ -5,6 +5,8 @@
 
 #define FXSAVE_SIZE 512
 
+#define MIN_XSAVE_SIZE 576
+
 struct streg {
     _Alignas(16) uint64_t lo;
     uint16_t hi;
@@ -43,16 +45,17 @@ struct user_context {
     /// Legacy Segment entries
     /// Order: [es, cs, ds, ss, fs, gs, tss, ldt]
     uint16_t sregs[8];
-    void *tdata;
+    struct thread *tdata;
     void *fsgsbase[2];
     uint64_t cr3;
     random_generator *urand_gen;
     void *dregs[6];
     uint64_t thread_flags[4];
     uint64_t cr4;
-    void *_pad[20];
+    void *_pad[19];
 
     // Keep these fields near `fxsave`
+    uint64_t xfd;
     uint64_t xcr0_allowed;
     /// If 0, no xsave/fxsave data stored at all
     /// If `FXSAVE_SIZE`, contains only fxsave state

@@ -39,3 +39,12 @@ enum system_segment_type : uint8_t {
 #define SYSTEM_SEGMENT_ACCESS(ty) (uint8_t)(0b10000000 | ((ty) & 0xF))
 
 extern gdt_entry_t gdt_entries[];
+
+
+constexpr static uint16_t GDT_KCODE64 = (5 << 3);
+constexpr static uint16_t GDT_KDATA64 = (6 << 3);
+
+constexpr static uint16_t GDT_TSS = (8 << 3);
+
+constexpr static uint16_t GDT_UCODE64 = (10 << 3);
+constexpr static uint16_t GDT_UDATA64 = (11 << 3);

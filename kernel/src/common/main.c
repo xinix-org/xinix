@@ -1,4 +1,5 @@
 #include "arch.h"
+#include "clock.h"
 #include "cpu.h"
 
 #include "debugging.h"
@@ -7,6 +8,7 @@
 #include "random.h"
 
 #include "sysresult.h"
+#include "uuid.h"
 #include <acpi.h>
 #include <auxv.h>
 #include <context.h>
@@ -18,6 +20,7 @@
 #include <memmap.h>
 #include <memory.h>
 #include <paging.h>
+#include <stdatomic.h>
 #include <stdio.h>
 
 #include <auxfuncs.h>
@@ -26,6 +29,7 @@
 #include <flanterm_backends/fb.h>
 #include <location.h>
 #include <strslice.h>
+#include <thread.h>
 
 [[gnu::section(".interp")]]
 const char __interp[16] = "/xinix-kernel.so";
@@ -59,9 +63,10 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
 }
 
 void keyboard_irq(void) {
+    kcontext_t* ctx = getcontext();
     int scancode = inb(0x60);
     kbd_process_scancode_byte(scancode);
-    lapic->end_of_interrupt_register.value = 0;
+    ctx->lapic->end_of_interrupt_register.value = 0;
 }
 
 [[gnu::used]]
@@ -140,6 +145,13 @@ void install_keyboard_irq(void) {
     write_io_redirect(1, IRQ_KB, IOREDTBL_DELIVERY_FIXED, false, false, false,
                       0);
 }
+
+
+void setup_timer(void) {
+    auto ctx = lock_context();
+}
+
+void init_tsc(void);
 
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
@@ -220,6 +232,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         hcf(ERR_GENERIC, CURRENT());
     }
     memset(tctx, 0, sizeof(ucontext_t));
+
     random_generator *gen =
         aligned_alloc(alignof(random_generator), sizeof(random_generator));
     *gen = RAND_GEN_STATIC_INIT;
@@ -246,6 +259,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     printf("Kernel Context is: %p\r\n", cval);
     printf("Thread Context is: %p\r\n", cval->current_thread);
 
+    init_tsc();
+
     // Test IDT
     char *intr_msg = nullptr;
     __asm__ volatile(
@@ -255,7 +270,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     printf("\r\n%s\r\n", intr_msg);
 
     // Print physical memory layout
-    printf("HHDM offset: %#.16llX\r\n", getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
+    printf("HHDM offset: %#.16lX\r\n", getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
     printf("Physical memory:\r\n");
     memmap *memory_map = getauxval(AT_KXINIX_MEMMAP).a_ptr;
     for (int i = 0; i < memory_map->entry_count; i++) {
@@ -310,10 +325,29 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         printf("\r\n");
     }
 
+    // struct process* kernel = aligned_alloc(alignof(struct process), sizeof(struct thread));
+
+    // struct thread* thread = aligned_alloc(alignof(struct thread), sizeof(struct thread));
+
+    // kernel->proc_owner = FULL_UUID;
+
+    // thread->thrd_uctx = tctx;
+    // thread->thrd_is_kernel = true;
+    // thread->thrd_owner = FULL_UUID;
+    // thread->thrd_cmono = (duration_t){};
+    // thread->thrd_last_tsc = (duration_t){};
+    // thread->thd_proc = kernel;
+
+    // tctx->tdata = thread;
+
+    // struct thread** threads = calloc(32, sizeof(struct thread*));
+    // threads[0] = thread;
+    // kernel->proc_threads = threads;
+    
     load_system_descriptor_tables();
 
-    lapic->task_priority_register.value = 0;
-    lapic->destination_format_register.value = 0xFF000000;
+    ctx->lapic->task_priority_register.value = 0;
+    ctx->lapic->destination_format_register.value = 0xFF000000;
     install_keyboard_irq();
 
     // Enable interrupts; should be abstracted out
@@ -348,6 +382,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         printf("%08X", x86_feature_array[i]);
     }
     printf("\r\n\r\n");
+
+    init_rtc();
 
     printf("prompt> ");
     while (1) {
