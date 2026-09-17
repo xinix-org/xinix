@@ -259,7 +259,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     printf("Kernel Context is: %p\r\n", cval);
     printf("Thread Context is: %p\r\n", cval->current_thread);
 
-    init_tsc();
+    // init_tsc();
 
     // Test IDT
     char *intr_msg = nullptr;
