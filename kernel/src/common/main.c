@@ -184,7 +184,7 @@ void setup_timer(void) {
     auto lapic = ctx->lapic;
 
     lapic->divide_configuration_register.value = 0x3;
-    lapic->initial_count_register.value = 0xFFFF;
+    lapic->initial_count_register.value = 0xFFF;
     lapic->lvt_timer_register.value = (2 << 17) | IRQ_TIMER;
     lapic->spurious_interrupt_vector_register.value = IRQ_SPURIOUS;
 }
@@ -386,7 +386,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     ctx->lapic->task_priority_register.value = 0;
     ctx->lapic->destination_format_register.value = 0xFF000000;
     install_keyboard_irq();
-    setup_timer();
+    // setup_timer();
 
     // Enable interrupts; should be abstracted out
     __asm__ volatile("sti");
