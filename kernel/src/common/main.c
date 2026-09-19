@@ -362,24 +362,24 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         printf("\r\n");
     }
 
-    // struct process* kernel = aligned_alloc(alignof(struct process), sizeof(struct thread));
+    struct process* kernel = aligned_alloc(alignof(struct process), sizeof(struct thread));
 
-    // struct thread* thread = aligned_alloc(alignof(struct thread), sizeof(struct thread));
+    struct thread* thread = aligned_alloc(alignof(struct thread), sizeof(struct thread));
 
-    // kernel->proc_owner = FULL_UUID;
+    kernel->proc_owner = FULL_UUID;
 
-    // thread->thrd_uctx = tctx;
-    // thread->thrd_is_kernel = true;
-    // thread->thrd_owner = FULL_UUID;
-    // thread->thrd_cmono = (duration_t){};
-    // thread->thrd_last_tsc = (duration_t){};
-    // thread->thd_proc = kernel;
+    thread->thrd_uctx = tctx;
+    thread->thrd_is_kernel = true;
+    thread->thrd_owner = FULL_UUID;
+    thread->thrd_cmono = (duration_t){};
+    thread->thrd_last_tsc = (duration_t){};
+    thread->thd_proc = kernel;
 
-    // tctx->tdata = thread;
+    tctx->tdata = thread;
 
-    // struct thread** threads = calloc(32, sizeof(struct thread*));
-    // threads[0] = thread;
-    // kernel->proc_threads = threads;
+    struct thread** threads = calloc(32, sizeof(struct thread*));
+    threads[0] = thread;
+    kernel->proc_threads = threads;
     
     load_system_descriptor_tables();
 
