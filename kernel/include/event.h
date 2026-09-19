@@ -25,5 +25,5 @@ enum EventKinds : uint32_t {
 
 /// Writes `r_event` to the event buffer.
 /// Event should be constructed using `KEY`, `MOUSE_BUTTON`, `MOUSE_MOTION`, or
-/// TIMER`
+/// `TIMER`
 void push_event(uint32_t r_event);

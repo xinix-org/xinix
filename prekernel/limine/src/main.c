@@ -39,6 +39,12 @@ static volatile struct limine_rsdp_request rsdp_request = {
     .revision = 0,
 };
 
+[[gnu::used, gnu::section(".limine_requests")]]
+static volatile struct limine_tsc_frequency_request tsc_frequency_request = {
+    .id = LIMINE_TSC_FREQUENCY_REQUEST_ID,
+    .revision = 0,
+};
+
 [[gnu::used, gnu::section(".limine_requests_start")]]
 static volatile uint64_t limine_requests_start_marker[] =
     LIMINE_REQUESTS_START_MARKER;
@@ -51,7 +57,7 @@ static volatile uint64_t limine_requests_end_marker[] =
 
 [[noreturn]]
 extern void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                       void *rsdp);
+                       void *rsdp, uint64_t tsc_freq);
 
 [[noreturn]]
 extern void hcf(void);
@@ -119,6 +125,12 @@ void pkmain(void) {
         pfb = &fb;
     }
 
+    uint64_t freq;
+    if(tsc_frequency_request.response)
+        freq = tsc_frequency_request.response->frequency;
+    else
+        freq = 0;
+
     // *** NOTE: HERE BE DRAGONS. THIS MUST BE LAST, OR ELSE THE KERNEL WILL ***
     // *** BE TOLD SOME MEMORY IS USABLE THAT DEFINITELY IS NOT.             ***
 
@@ -153,5 +165,5 @@ void pkmain(void) {
                   .entries = entries};
 
     call_kmain(hhdm_request.response->offset, pfb, &map,
-               rsdp_request.response->address);
+               rsdp_request.response->address, freq);
 }

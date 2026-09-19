@@ -4,8 +4,8 @@
 
 static _Atomic(uint64_t) boottime; 
 
-void isr_increment_boottime(unsigned val) {
-    atomic_fetch_add_explicit(&boottime, (uint64_t)val, memory_order_relaxed);
+void isr_increment_boottime(uint64_t val) {
+    atomic_fetch_add_explicit(&boottime, val, memory_order_relaxed);
 }
 
 uint64_t read_boottime_micros() {

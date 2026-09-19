@@ -3,11 +3,13 @@
 #include "cpu.h"
 
 #include "debugging.h"
+#include "event.h"
 #include "keyboard.h"
 
 #include "random.h"
 
 #include "sysresult.h"
+#include "time.h"
 #include "uuid.h"
 #include <acpi.h>
 #include <auxv.h>
@@ -25,6 +27,7 @@
 
 #include <auxfuncs.h>
 #include <exceptions.h>
+#include <irq.h>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
 #include <location.h>
@@ -69,11 +72,43 @@ void keyboard_irq(void) {
     ctx->lapic->end_of_interrupt_register.value = 0;
 }
 
+void isr_increment_boottime(uint64_t dt_micros);
+
+ucontext_t *timer_irq(ucontext_t *context) {
+    kcontext_t* ctx = getcontext();
+
+    duration_t dur = read_tsc();
+
+    duration_t step = duration_sub(dur, ctx->last_timer_tsc);
+
+    if (step.time_seconds < 0)
+        {
+            // Degenerate case, but don't be unsound
+            step = (duration_t){};
+        }
+
+    ctx->last_timer_tsc = dur;
+
+    push_event(TIMER(step.time_nanos & 0xFFFFFF));
+
+    if(ctx->is_root_context) {
+        uint64_t micros = (step.time_seconds * 1'000'000) + (step.time_nanos / 1'000);
+
+        isr_increment_boottime(micros);
+    }
+
+    ctx->lapic->end_of_interrupt_register.value = 0;
+    return context;
+}
+
 [[gnu::used]]
 ucontext_t *handle_int(ucontext_t *context, int irq) {
     if (irq == IRQ_KB) {
         keyboard_irq();
         return context;
+    } else if (irq == IRQ_TIMER) {
+        printf("Got timer interrupt\r\n");
+        return timer_irq(context);
     }
     const char *name = exception_name(irq);
     if (name)
@@ -102,10 +137,6 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
         } else {
             handle_kernel_debug(context, false);
         }
-    }
-
-    if (irq == 0x20) {
-        context->gregs[0] = "Hello from Beyond the Interrupt!";
     }
 
     return context;
@@ -148,7 +179,14 @@ void install_keyboard_irq(void) {
 
 
 void setup_timer(void) {
-    auto ctx = lock_context();
+    auto ctx = getcontext();
+
+    auto lapic = ctx->lapic;
+
+    lapic->divide_configuration_register.value = 0x3;
+    lapic->initial_count_register.value = 0xFFFF;
+    lapic->lvt_timer_register.value = (2 << 17) | IRQ_TIMER;
+    lapic->spurious_interrupt_vector_register.value = IRQ_SPURIOUS;
 }
 
 void init_tsc(void);
@@ -224,12 +262,16 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
     if (!ctx) {
         printf("Error allocating initial core kcontext\r\n");
-        hcf(ERR_GENERIC, CURRENT());
+        // hcf(ERR_GENERIC, CURRENT());
+        for(;;)
+            __asm__ volatile("hlt");
     }
     ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
     if (!tctx) {
         printf("Error allocating initial kernel thread context");
-        hcf(ERR_GENERIC, CURRENT());
+        // hcf(ERR_GENERIC, CURRENT());
+        for(;;)
+            __asm__ volatile("hlt");
     }
     memset(tctx, 0, sizeof(ucontext_t));
 
@@ -240,6 +282,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     ctx->total_context_size = sizeof(kcontext_t);
     ctx->self = ctx;
     ctx->current_thread = tctx;
+    ctx->is_root_context = true; // Only true on the first thread
     const uint8_t *at_rand = getauxval(AT_RANDOM).a_ptr;
     ctx->kgen = RAND_GEN_STATIC_INIT;
     if (at_rand)
@@ -259,15 +302,9 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     printf("Kernel Context is: %p\r\n", cval);
     printf("Thread Context is: %p\r\n", cval->current_thread);
 
-    // init_tsc();
+    init_tsc();
 
-    // Test IDT
-    char *intr_msg = nullptr;
-    __asm__ volatile(
-        "int $0x20"
-        : "=a"(intr_msg)); // int3 is intercepted by qemu in debug mode
-
-    printf("\r\n%s\r\n", intr_msg);
+    ctx->last_timer_tsc = read_tsc();
 
     // Print physical memory layout
     printf("HHDM offset: %#.16lX\r\n", getauxval(AT_KXINIX_HHDM_OFFSET).a_val);
@@ -349,6 +386,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     ctx->lapic->task_priority_register.value = 0;
     ctx->lapic->destination_format_register.value = 0xFF000000;
     install_keyboard_irq();
+    setup_timer();
 
     // Enable interrupts; should be abstracted out
     __asm__ volatile("sti");

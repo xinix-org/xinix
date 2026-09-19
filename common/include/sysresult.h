@@ -36,6 +36,8 @@ inline static const char *sysresult_describe(sysresult_t res) {
         return "Unexpected Dynamic Relocation";
     case ERR_INSUFFICIENT_MEMORY:
         return "Insufficient System Memory";
+    case ERR_UNUSABLE_TSC:
+        return "Uncalibrated Timestamp Counter";
     default:
         return nullptr;
     }

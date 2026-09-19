@@ -17,12 +17,12 @@ typedef struct user_context ucontext_t;
 
 typedef struct kernel_context {
     _Alignas(256) struct kernel_context *self;
+    bool is_root_context;
     size_t total_context_size;
     ucontext_t *current_thread;
     _Atomic(size_t) kgen_lock;
     random_generator kgen;
-    duration_t rtc_last_tsc;
-    duration_t rtc_last_epoch;
+    duration_t last_timer_tsc;
     volatile lapic_t *lapic; // TODO: thread-local
 } kcontext_t;
 

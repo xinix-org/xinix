@@ -110,7 +110,7 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
 
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp) {
+                void *rsdp, uint64_t tsc_freq) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;
@@ -165,6 +165,13 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
         (auxv_t){.a_type = AT_KXINIX_HHDM_OFFSET, .a_un.a_val = hhdm_offset};
     *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_MEMMAP, .a_un.a_ptr = memmap};
     *auxtarg++ = (auxv_t){.a_type = AT_BASE, .a_un.a_ptr = nullptr};
+
+    if(tsc_freq != 0) {
+        if(sizeof(size_t) < sizeof(void*))
+            *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_TSC_FREQ, .a_un.a_ptr = &tsc_freq};
+        else
+            *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_TSC_FREQ, .a_un.a_val = tsc_freq};
+    }
 
     struct {
         char signature[8];
