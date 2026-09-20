@@ -55,11 +55,11 @@ gdt_entry_t gdt_entries[32] = {
     {.access = SYSTEM_SEGMENT_ACCESS(TSS) & 0x7F},
     {}, // tss continued
     {.limit_lo = 0xFFFF,
-     .access = USER_SEGMENT_ACCESS(1, 3),
-     .flags_and_limit_hi = 0xF | GDT_64BITC},
-    {.limit_lo = 0xFFFF,
      .access = USER_SEGMENT_ACCESS(0, 3),
      .flags_and_limit_hi = 0xF | GDT_32BIT},
+     {.limit_lo = 0xFFFF,
+     .access = USER_SEGMENT_ACCESS(1, 3),
+     .flags_and_limit_hi = 0xF | GDT_64BITC},
 };
 
 static void load_gdt(void) {

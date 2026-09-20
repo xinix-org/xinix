@@ -3,9 +3,12 @@
 #include "context.h"
 #include "time.h"
 #include <uuid.h>
+#include <stdint.h>
+#include <stddef.h>
 
 struct process {
-    uuid proc_owner;
+    uint64_t proc_uid;
+    uint64_t proc_gid;
     struct thread** proc_threads;
     size_t proc_nthreads;
     size_t proc_cthreads;
@@ -13,10 +16,14 @@ struct process {
 
 struct thread {
     _Atomic(kcontext_t*) thrd_resident;
-    uuid thrd_owner;
+    uint64_t thrd_uid;
+    uint64_t thrd_gid;
     struct process* thd_proc;
     ucontext_t* thrd_uctx;
     bool thrd_is_kernel;
     duration_t thrd_last_tsc;
     duration_t thrd_cmono;
 };
+
+
+#define UID_KERNEL (~UINT64_C(0))

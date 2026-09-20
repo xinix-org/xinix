@@ -17,9 +17,9 @@ typedef struct user_context ucontext_t;
 
 typedef struct kernel_context {
     _Alignas(256) struct kernel_context *self;
-    bool is_root_context;
     size_t total_context_size;
     ucontext_t *current_thread;
+    bool is_root_context;
     _Atomic(size_t) kgen_lock;
     random_generator kgen;
     duration_t last_timer_tsc;

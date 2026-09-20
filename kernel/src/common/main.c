@@ -366,11 +366,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     struct thread* thread = aligned_alloc(alignof(struct thread), sizeof(struct thread));
 
-    kernel->proc_owner = FULL_UUID;
+    kernel->proc_uid = UID_KERNEL;
+    kernel->proc_gid = UID_KERNEL;
+    
 
     thread->thrd_uctx = tctx;
     thread->thrd_is_kernel = true;
-    thread->thrd_owner = FULL_UUID;
+    thread->thrd_uid = UID_KERNEL;
+    thread->thrd_gid = UID_KERNEL;
     thread->thrd_cmono = (duration_t){};
     thread->thrd_last_tsc = (duration_t){};
     thread->thd_proc = kernel;
