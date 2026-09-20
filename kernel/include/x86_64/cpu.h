@@ -32,7 +32,6 @@ static inline void outl(uint16_t port, uint32_t val) {
     __asm__ volatile("outl %l0, %w1" : : "a"(val), "Nd"(port) : "memory");
 }
 
-
 static inline unsigned long read_cr4(void) {
     unsigned long ret;
     __asm__ volatile("mov %0, %%cr4" : "=r"(ret));

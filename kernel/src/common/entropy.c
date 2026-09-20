@@ -83,7 +83,7 @@ int random_global_gen(uint8_t out[static restrict 16]) {
 
     if (rand_ticks_since_ingest(gen) >= USER_TICKS_SINCE_INGEST) {
         uint8_t buf[16];
-        if(random_kglobal_gen(buf) < 0)
+        if (random_kglobal_gen(buf) < 0)
             rand_slow_get_entropy(buf);
         rand_ingest(gen, buf);
     }

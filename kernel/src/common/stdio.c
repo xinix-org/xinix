@@ -233,29 +233,30 @@ static constexpr const char LOWER_HEX[16] = "0123456789abcdef";
 static constexpr const char OCT[8] = "01234567";
 static constexpr const char BIN[2] = "01";
 
-static inline size_t print_dec_int(unsigned long long value, int precision, bool is_signed, FILE *restrict stream, int flags,
-                                        int min_width) {
+static inline size_t print_dec_int(unsigned long long value, int precision,
+                                   bool is_signed, FILE *restrict stream,
+                                   int flags, int min_width) {
     char buffer[21];
 
-    if(precision == -1) {
+    if (precision == -1) {
         precision = 1;
     }
 
     char sign = '\0';
 
-    if(is_signed && (value & 0x8000'0000'0000'0000)) {
+    if (is_signed && (value & 0x8000'0000'0000'0000)) {
         sign = '-';
         value = -value;
-    } else if(flags & PLUS_FLAG)
+    } else if (flags & PLUS_FLAG)
         sign = '+';
 
-    char* bend = buffer+20;
-    char* bpos = bend;
+    char *bend = buffer + 20;
+    char *bpos = bend;
 
     int real_precision = precision <= 20 ? precision : 20;
     unsigned extra_precision = precision - real_precision;
 
-    for(; (value != 0) || (real_precision > 0); real_precision--) {
+    for (; (value != 0) || (real_precision > 0); real_precision--) {
         uint8_t digit = value % 10;
         value /= 10;
 
@@ -264,26 +265,26 @@ static inline size_t print_dec_int(unsigned long long value, int precision, bool
 
     size_t total_written = 0;
 
-    unsigned spaces = (precision < min_width)? (min_width - precision) : 0;
+    unsigned spaces = (precision < min_width) ? (min_width - precision) : 0;
 
-    if(flags & ZERO_FLAG) {
+    if (flags & ZERO_FLAG) {
         extra_precision += spaces;
         spaces = 0;
     }
 
-    if(sign)
+    if (sign)
         spaces--;
 
-    while(spaces > 64) {
+    while (spaces > 64) {
         WRITE_CHECKED(stream, 64, ZEROS, total_written);
         spaces -= 64;
     }
     WRITE_CHECKED(stream, spaces, ZEROS, total_written);
 
-    if(sign)
+    if (sign)
         WRITE_CHECKED(stream, 1, &sign, total_written);
 
-    while(extra_precision > 64) {
+    while (extra_precision > 64) {
         WRITE_CHECKED(stream, 64, ZEROS, total_written);
         extra_precision -= 64;
     }
@@ -549,18 +550,17 @@ int vfprintf(FILE *restrict stream, const char *restrict format,
             WRITE_CHECKED(stream, 1, &ch, bytes_printed);
         } break;
         case 'd':
-        case 'i':
-         {
-            auto value = (unsigned long long)read_int(length_spec, length_extra, vlist);
-            bytes_printed = print_dec_int(value, precision, true, stream, flags, min_width);
-         }
-         break;
-        case 'u':
-         {
+        case 'i': {
+            auto value =
+                (unsigned long long)read_int(length_spec, length_extra, vlist);
+            bytes_printed =
+                print_dec_int(value, precision, true, stream, flags, min_width);
+        } break;
+        case 'u': {
             auto value = read_unsigned_int(length_spec, length_extra, vlist);
-            bytes_printed = print_dec_int(value, precision, false, stream, flags, min_width);
-         }
-         break;
+            bytes_printed = print_dec_int(value, precision, false, stream,
+                                          flags, min_width);
+        } break;
         case 'X': {
             unsigned long long value =
                 read_unsigned_int(length_spec, length_extra, vlist);

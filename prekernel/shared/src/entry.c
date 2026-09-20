@@ -166,11 +166,13 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
     *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_MEMMAP, .a_un.a_ptr = memmap};
     *auxtarg++ = (auxv_t){.a_type = AT_BASE, .a_un.a_ptr = nullptr};
 
-    if(tsc_freq != 0) {
-        if(sizeof(size_t) < sizeof(void*))
-            *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_TSC_FREQ, .a_un.a_ptr = &tsc_freq};
+    if (tsc_freq != 0) {
+        if (sizeof(size_t) < sizeof(void *))
+            *auxtarg++ =
+                (auxv_t){.a_type = AT_KXINIX_TSC_FREQ, .a_un.a_ptr = &tsc_freq};
         else
-            *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_TSC_FREQ, .a_un.a_val = tsc_freq};
+            *auxtarg++ =
+                (auxv_t){.a_type = AT_KXINIX_TSC_FREQ, .a_un.a_val = tsc_freq};
     }
 
     struct {

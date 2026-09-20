@@ -27,7 +27,6 @@ enum exception_id : int {
     EXCEPT_VC = 29,
     EXCEPT_SC = 30,
 
-    
 };
 
 #define EXCEPTION_NAME_ID(name)                                                \

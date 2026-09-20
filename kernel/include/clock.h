@@ -1,7 +1,7 @@
 #pragma once
 
-#include <time.h>
 #include <bits/feat_test.h>
+#include <time.h>
 
 void init_rtc(void);
 

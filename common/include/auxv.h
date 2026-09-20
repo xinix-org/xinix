@@ -39,7 +39,8 @@ typedef struct {
 #define AT_KXINIX_RSDT_ADDR 102   // RSDT pointer (virtual address)
 #define AT_KXINIX_XSDT_ADDR 103   // XSDT pointer (virtual address)
 
-#define AT_KXINIX_TSC_FREQ 104 // tsc frequency (in Hz) (indirectly on 32-bit platforms)
+#define AT_KXINIX_TSC_FREQ                                                     \
+    104 // tsc frequency (in Hz) (indirectly on 32-bit platforms)
 
 #define AT_XINIX_MAX_KERNEL 127 // Max value of a_type entry passed to kernel
 

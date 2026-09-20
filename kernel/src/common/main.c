@@ -27,10 +27,11 @@
 
 #include <auxfuncs.h>
 #include <exceptions.h>
-#include <irq.h>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
+#include <irq.h>
 #include <location.h>
+#include <string.h>
 #include <strslice.h>
 #include <thread.h>
 
@@ -66,7 +67,7 @@ void print_feature_flag(void *v_want_comma, enum x86_feature_flag flag) {
 }
 
 void keyboard_irq(void) {
-    kcontext_t* ctx = getcontext();
+    kcontext_t *ctx = getcontext();
     int scancode = inb(0x60);
     kbd_process_scancode_byte(scancode);
     ctx->lapic->end_of_interrupt_register.value = 0;
@@ -75,24 +76,24 @@ void keyboard_irq(void) {
 void isr_increment_boottime(uint64_t dt_micros);
 
 ucontext_t *timer_irq(ucontext_t *context) {
-    kcontext_t* ctx = getcontext();
+    kcontext_t *ctx = getcontext();
 
     duration_t dur = read_tsc();
 
     duration_t step = duration_sub(dur, ctx->last_timer_tsc);
 
-    if (step.time_seconds < 0)
-        {
-            // Degenerate case, but don't be unsound
-            step = (duration_t){};
-        }
+    if (step.time_seconds < 0) {
+        // Degenerate case, but don't be unsound
+        step = (duration_t){};
+    }
 
     ctx->last_timer_tsc = dur;
 
     push_event(TIMER(step.time_nanos & 0xFFFFFF));
 
-    if(ctx->is_root_context) {
-        uint64_t micros = (step.time_seconds * 1'000'000) + (step.time_nanos / 1'000);
+    if (ctx->is_root_context) {
+        uint64_t micros =
+            (step.time_seconds * 1'000'000) + (step.time_nanos / 1'000);
 
         isr_increment_boottime(micros);
     }
@@ -177,7 +178,6 @@ void install_keyboard_irq(void) {
                       0);
 }
 
-
 void setup_timer(void) {
     auto ctx = getcontext();
 
@@ -190,6 +190,101 @@ void setup_timer(void) {
 }
 
 void init_tsc(void);
+
+void eval(const char *line) {
+    // TODO: do this less stupidly
+    if (memcmp(line, "echo ", 5) == 0) {
+        printf("%s\r\n", &line[5]); // skip the command and the following space
+    } else {
+        printf("command not found\r\n");
+    }
+}
+
+void run_prompt() {
+    char *line = malloc(32);
+    int line_capacity = 32;
+    int pos = 0;
+    int line_len = 0;
+    size_t cols, rows;
+    flanterm_get_dimensions(stdout->data, &cols, &rows);
+    size_t cursor_start_x, cursor_start_y, line_end_x, line_end_y;
+    while (true) {
+        printf("prompt> ");
+        flanterm_get_cursor_pos(stdout->data, &cursor_start_x, &cursor_start_y);
+        line_end_x = cursor_start_x;
+        line_end_y = cursor_start_y;
+        while (true) {
+            kbd_scan_code_t scan_code = kbd_poll_key();
+            if (scan_code == 0) {
+                spin_loop_hint();
+                continue;
+            }
+            if (scan_code & KEY_SCAN_RELEASE) {
+                continue; // ignore keyup
+            }
+            if (scan_code == KEY_SCAN_BACKSPACE) {
+                if (pos != 0) {
+                    memmove(&line[pos - 1], &line[pos], line_len - pos);
+                    pos -= 1;
+                    line_len -= 1;
+                }
+            } else if (scan_code == KEY_SCAN_ENTER) {
+                printf("\r\n");
+                break;
+            } else if (scan_code == KEY_SCAN_ARROW_LEFT) {
+                if (pos != 0) {
+                    pos -= 1;
+                }
+            } else if (scan_code == KEY_SCAN_ARROW_RIGHT) {
+                if (pos < line_len) {
+                    pos += 1;
+                }
+            } else if (scan_code == KEY_SCAN_TAB) {
+                // TODO: tab completion or something, idk
+            } else {
+                char ch = kbd_get_char_for_scancode(scan_code);
+                if (ch) {
+                    if (line_len + 1 == line_capacity) {
+                        // need an extra byte at least for null terminator; grow
+                        // the buffer
+                        char *new_line = malloc(line_capacity * 2);
+                        if (!new_line) {
+                            hcf(ERR_GENERIC, CURRENT());
+                        }
+                        memcpy(new_line, line, line_capacity);
+                        line_capacity *= 2;
+                        line = new_line;
+                    }
+                    memmove(&line[pos + 1], &line[pos], line_len - pos);
+                    line[pos] = ch;
+                    pos += 1;
+                    line_len += 1;
+                }
+            }
+            flanterm_set_cursor_pos(stdout->data, cursor_start_x,
+                                    cursor_start_y);
+            flanterm_write(stdout->data, line, line_len);
+            flanterm_write(stdout->data, " ",
+                           1); // Clear any extraneous characters, and push us
+                               // to the next line if needed
+            size_t expected_line_end_y =
+                cursor_start_y + ((cursor_start_x + line_len) / cols);
+            flanterm_get_cursor_pos(stdout->data, &line_end_x, &line_end_y);
+            while (line_end_y < expected_line_end_y) {
+                // we scrolled; fix our position
+                expected_line_end_y -= 1;
+                cursor_start_y -= 1;
+            }
+            flanterm_set_cursor_pos(stdout->data, (cursor_start_x + pos) % cols,
+                                    cursor_start_y +
+                                        ((cursor_start_x + pos) / cols));
+        }
+        line[line_len] = 0;
+        eval(line);
+        line_len = 0;
+        pos = 0;
+    }
+}
 
 [[noreturn]]
 extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
@@ -263,14 +358,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     if (!ctx) {
         printf("Error allocating initial core kcontext\r\n");
         // hcf(ERR_GENERIC, CURRENT());
-        for(;;)
+        for (;;)
             __asm__ volatile("hlt");
     }
     ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
     if (!tctx) {
         printf("Error allocating initial kernel thread context");
         // hcf(ERR_GENERIC, CURRENT());
-        for(;;)
+        for (;;)
             __asm__ volatile("hlt");
     }
     memset(tctx, 0, sizeof(ucontext_t));
@@ -362,13 +457,14 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         printf("\r\n");
     }
 
-    struct process* kernel = aligned_alloc(alignof(struct process), sizeof(struct thread));
+    struct process *kernel =
+        aligned_alloc(alignof(struct process), sizeof(struct thread));
 
-    struct thread* thread = aligned_alloc(alignof(struct thread), sizeof(struct thread));
+    struct thread *thread =
+        aligned_alloc(alignof(struct thread), sizeof(struct thread));
 
     kernel->proc_uid = UID_KERNEL;
     kernel->proc_gid = UID_KERNEL;
-    
 
     thread->thrd_uctx = tctx;
     thread->thrd_is_kernel = true;
@@ -380,10 +476,10 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     tctx->tdata = thread;
 
-    struct thread** threads = calloc(32, sizeof(struct thread*));
+    struct thread **threads = calloc(32, sizeof(struct thread *));
     threads[0] = thread;
     kernel->proc_threads = threads;
-    
+
     load_system_descriptor_tables();
 
     ctx->lapic->task_priority_register.value = 0;
@@ -426,27 +522,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     init_rtc();
 
-    printf("prompt> ");
-    while (1) {
-        kbd_scan_code_t scan_code = kbd_poll_key();
-        if (scan_code == 0) {
-            spin_loop_hint();
-            continue;
-        }
-        if (scan_code & KEY_SCAN_RELEASE) {
-            continue; // ignore keyup
-        }
-        if (scan_code == KEY_SCAN_BACKSPACE) {
-            printf("\x08 \x08"); // terrible backspace handling; TODO do a line
-                                 // buffer
-        } else if (scan_code == KEY_SCAN_ENTER) {
-            printf("\r\n");
-        } else {
-            char ch = kbd_get_char_for_scancode(scan_code);
-            if (ch) {
-                printf("%c", ch);
-            }
-        }
-    }
+    run_prompt();
     // hcf(0, CURRENT());
 }

@@ -2,7 +2,7 @@
 #include <clock.h>
 #include <stdatomic.h>
 
-static _Atomic(uint64_t) boottime; 
+static _Atomic(uint64_t) boottime;
 
 void isr_increment_boottime(uint64_t val) {
     atomic_fetch_add_explicit(&boottime, val, memory_order_relaxed);

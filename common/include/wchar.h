@@ -8,7 +8,7 @@ typedef int wchar_t;
 #endif
 #endif
 
-static_assert(sizeof(wchar_t)==4);
+static_assert(sizeof(wchar_t) == 4);
 
 #ifdef __WINT_TYPE__
 typedef __WINT_TYPE__ wint_t;

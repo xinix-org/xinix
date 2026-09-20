@@ -73,8 +73,6 @@ static_assert(sizeof(lapic_t) == 0x400);
 static_assert(alignof(lapic_t) >= 0x10);
 static_assert(offsetof(lapic_t, reserved3F0) == 0x3F0);
 
-
-
 typedef struct ioapic {
     void *register_base;
     int id;
@@ -219,9 +217,8 @@ extern void write_io_redirect(uint8_t irq, uint8_t int_id,
                               bool destination_is_logical, bool active_low,
                               bool level_triggered, uint8_t destination);
 
+extern fadt_t *fadt;
 
-extern fadt_t* fadt;
+extern volatile facs_t *facs;
 
-extern volatile facs_t* facs;
-
-extern dsdt_t* dsdt;
+extern dsdt_t *dsdt;

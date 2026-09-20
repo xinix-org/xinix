@@ -12,7 +12,6 @@ struct thread;
 
 #include <usercontext.h>
 
-
 typedef struct user_context ucontext_t;
 
 typedef struct kernel_context {
@@ -43,10 +42,8 @@ void random_kglobal_ingest(const uint8_t _buf[static restrict 16]);
 
 void print_ucontext(const ucontext_t *_uctx);
 
-
 /// Creates a new ucontext_t for a specified process
-sysresult2_t create_context(struct thread* _th, paddr_t _ptable);
-
+sysresult2_t create_context(struct thread *_th, paddr_t _ptable);
 
 kcontext_t *lock_context(void);
 void unlock_context(void);

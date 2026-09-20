@@ -40,13 +40,11 @@ enum system_segment_type : uint8_t {
 
 extern gdt_entry_t gdt_entries[];
 
-
 constexpr static uint16_t GDT_KBASE = (5 << 3);
 constexpr static uint16_t GDT_KCODE64 = (5 << 3);
 constexpr static uint16_t GDT_KDATA64 = (6 << 3);
 
 constexpr static uint16_t GDT_TSS = (8 << 3);
-
 
 constexpr static uint16_t GDT_UBASE = (9 << 3);
 constexpr static uint16_t GDT_UCODE64 = (11 << 3);

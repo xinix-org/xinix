@@ -14,5 +14,3 @@ typedef struct {
 
 #define NIL_UUID ((uuid){})
 #define FULL_UUID ((uuid){.uuid_lo = ~UINT64_C(0), .uuid_hi = ~UINT64_C(0)})
-
-

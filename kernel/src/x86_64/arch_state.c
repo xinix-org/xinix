@@ -57,7 +57,7 @@ gdt_entry_t gdt_entries[32] = {
     {.limit_lo = 0xFFFF,
      .access = USER_SEGMENT_ACCESS(0, 3),
      .flags_and_limit_hi = 0xF | GDT_32BIT},
-     {.limit_lo = 0xFFFF,
+    {.limit_lo = 0xFFFF,
      .access = USER_SEGMENT_ACCESS(1, 3),
      .flags_and_limit_hi = 0xF | GDT_64BITC},
 };
@@ -141,4 +141,3 @@ void load_arch_state(void) {
     load_gdt();
     load_idt();
 }
-

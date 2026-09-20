@@ -45,41 +45,57 @@ static const kbd_scan_transition_t KBD_STATE_MACHINE[NUM_KB_SCAN_STATES][256] = 
         U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 68-6F
         U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 70-77
         U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 78-7F
-        X,                     KU(KEY_SCAN_ESCAPE),    KU(KEY_SCAN_1),               KU(KEY_SCAN_2),              KU(KEY_SCAN_3),       KU(KEY_SCAN_4),            KU(KEY_SCAN_5),           KU(KEY_SCAN_6),               // 00-07
-        KU(KEY_SCAN_7),        KU(KEY_SCAN_8),         KU(KEY_SCAN_9),               KU(KEY_SCAN_0),              KU(KEY_SCAN_MINUS),   KU(KEY_SCAN_EQUAL),        KU(KEY_SCAN_BACKSPACE),   KU(KEY_SCAN_TAB),             // 08-0F
-        KU(KEY_SCAN_Q),        KU(KEY_SCAN_W),         KU(KEY_SCAN_E),               KU(KEY_SCAN_R),              KU(KEY_SCAN_T),       KU(KEY_SCAN_Y),            KU(KEY_SCAN_U),           KU(KEY_SCAN_I),               // 10-17
-        KU(KEY_SCAN_O),        KU(KEY_SCAN_P),         KU(KEY_SCAN_BRACKET_LEFT),    KU(KEY_SCAN_BRACKET_RIGHT),  KU(KEY_SCAN_ENTER),   KU(KEY_SCAN_CONTROL_LEFT), KU(KEY_SCAN_A),           KU(KEY_SCAN_S),               // 18-1F
-        KU(KEY_SCAN_D),        KU(KEY_SCAN_F),         KU(KEY_SCAN_G),               KU(KEY_SCAN_H),              KU(KEY_SCAN_J),       KU(KEY_SCAN_K),            KU(KEY_SCAN_L),           KU(KEY_SCAN_SEMICOLON),       // 20-27
-        KU(KEY_SCAN_QUOTE),    KU(KEY_SCAN_BACKQUOTE), KU(KEY_SCAN_SHIFT_LEFT),      KU(KEY_SCAN_BACKSLASH),      KU(KEY_SCAN_Z),       KU(KEY_SCAN_X),            KU(KEY_SCAN_C),           KU(KEY_SCAN_V),               // 28-2F
-        KU(KEY_SCAN_B),        KU(KEY_SCAN_N),         KU(KEY_SCAN_M),               KU(KEY_SCAN_COMMA),          KU(KEY_SCAN_PERIOD),  KU(KEY_SCAN_SLASH),        KU(KEY_SCAN_SHIFT_RIGHT), KU(KEY_SCAN_NUMPAD_MULTIPLY), // 30-37
-        KU(KEY_SCAN_ALT_LEFT), KU(KEY_SCAN_SPACE),     KU(KEY_SCAN_CAPS_LOCK),       KU(KEY_SCAN_F1),             KU(KEY_SCAN_F2),      KU(KEY_SCAN_F3),           KU(KEY_SCAN_F4),          KU(KEY_SCAN_F5),              // 38-3F
-        KU(KEY_SCAN_F6),       KU(KEY_SCAN_F7),        KU(KEY_SCAN_F8),              KU(KEY_SCAN_F9),             KU(KEY_SCAN_F10),     KU(KEY_SCAN_NUM_LOCK),     KU(KEY_SCAN_SCROLL_LOCK), KU(KEY_SCAN_NUMPAD7),         // 40-47
-        KU(KEY_SCAN_NUMPAD8),  KU(KEY_SCAN_NUMPAD9),   KU(KEY_SCAN_NUMPAD_SUBTRACT), KU(KEY_SCAN_NUMPAD4),        KU(KEY_SCAN_NUMPAD5), KU(KEY_SCAN_NUMPAD6),      KU(KEY_SCAN_NUMPAD_ADD),  KU(KEY_SCAN_NUMPAD1),         // 48-4F
-        KU(KEY_SCAN_NUMPAD2),  KU(KEY_SCAN_NUMPAD3),   KU(KEY_SCAN_NUMPAD0),         KU(KEY_SCAN_NUMPAD_DECIMAL), KU(KEY_SCAN_O),       U,                         U,                        KU(KEY_SCAN_F11),             // 50-57
-        KU(KEY_SCAN_F12),      U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 58-5F
-        B,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 60-67
-        U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 68-6F
-        U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 70-77
-        U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // 78-7F
+        X,                     KU(KEY_SCAN_ESCAPE),    KU(KEY_SCAN_1),               KU(KEY_SCAN_2),              KU(KEY_SCAN_3),       KU(KEY_SCAN_4),            KU(KEY_SCAN_5),           KU(KEY_SCAN_6),               // 80-87
+        KU(KEY_SCAN_7),        KU(KEY_SCAN_8),         KU(KEY_SCAN_9),               KU(KEY_SCAN_0),              KU(KEY_SCAN_MINUS),   KU(KEY_SCAN_EQUAL),        KU(KEY_SCAN_BACKSPACE),   KU(KEY_SCAN_TAB),             // 88-8F
+        KU(KEY_SCAN_Q),        KU(KEY_SCAN_W),         KU(KEY_SCAN_E),               KU(KEY_SCAN_R),              KU(KEY_SCAN_T),       KU(KEY_SCAN_Y),            KU(KEY_SCAN_U),           KU(KEY_SCAN_I),               // 90-97
+        KU(KEY_SCAN_O),        KU(KEY_SCAN_P),         KU(KEY_SCAN_BRACKET_LEFT),    KU(KEY_SCAN_BRACKET_RIGHT),  KU(KEY_SCAN_ENTER),   KU(KEY_SCAN_CONTROL_LEFT), KU(KEY_SCAN_A),           KU(KEY_SCAN_S),               // 98-9F
+        KU(KEY_SCAN_D),        KU(KEY_SCAN_F),         KU(KEY_SCAN_G),               KU(KEY_SCAN_H),              KU(KEY_SCAN_J),       KU(KEY_SCAN_K),            KU(KEY_SCAN_L),           KU(KEY_SCAN_SEMICOLON),       // A0-A7
+        KU(KEY_SCAN_QUOTE),    KU(KEY_SCAN_BACKQUOTE), KU(KEY_SCAN_SHIFT_LEFT),      KU(KEY_SCAN_BACKSLASH),      KU(KEY_SCAN_Z),       KU(KEY_SCAN_X),            KU(KEY_SCAN_C),           KU(KEY_SCAN_V),               // A8-AF
+        KU(KEY_SCAN_B),        KU(KEY_SCAN_N),         KU(KEY_SCAN_M),               KU(KEY_SCAN_COMMA),          KU(KEY_SCAN_PERIOD),  KU(KEY_SCAN_SLASH),        KU(KEY_SCAN_SHIFT_RIGHT), KU(KEY_SCAN_NUMPAD_MULTIPLY), // B0-B7
+        KU(KEY_SCAN_ALT_LEFT), KU(KEY_SCAN_SPACE),     KU(KEY_SCAN_CAPS_LOCK),       KU(KEY_SCAN_F1),             KU(KEY_SCAN_F2),      KU(KEY_SCAN_F3),           KU(KEY_SCAN_F4),          KU(KEY_SCAN_F5),              // B8-BF
+        KU(KEY_SCAN_F6),       KU(KEY_SCAN_F7),        KU(KEY_SCAN_F8),              KU(KEY_SCAN_F9),             KU(KEY_SCAN_F10),     KU(KEY_SCAN_NUM_LOCK),     KU(KEY_SCAN_SCROLL_LOCK), KU(KEY_SCAN_NUMPAD7),         // C0-C7
+        KU(KEY_SCAN_NUMPAD8),  KU(KEY_SCAN_NUMPAD9),   KU(KEY_SCAN_NUMPAD_SUBTRACT), KU(KEY_SCAN_NUMPAD4),        KU(KEY_SCAN_NUMPAD5), KU(KEY_SCAN_NUMPAD6),      KU(KEY_SCAN_NUMPAD_ADD),  KU(KEY_SCAN_NUMPAD1),         // C8-CF
+        KU(KEY_SCAN_NUMPAD2),  KU(KEY_SCAN_NUMPAD3),   KU(KEY_SCAN_NUMPAD0),         KU(KEY_SCAN_NUMPAD_DECIMAL), KU(KEY_SCAN_O),       U,                         U,                        KU(KEY_SCAN_F11),             // D0-D7
+        KU(KEY_SCAN_F12),      U,                      U,                            U,                           U,                    U,                         U,                        U,                            // D8-DF
+        B,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // E0-E7
+        U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // E8-EF
+        U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // F0-F7
+        U,                     U,                      U,                            U,                           U,                    U,                         U,                        U,                            // F8-FF
     },
     // KB_SCAN_E0
     {
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 00-0F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 10-1F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 20-2F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 30-3F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 40-4F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 50-5F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 60-6F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 70-7F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 80-8F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // 90-9F
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // A0-AF
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // B0-BF
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // C0-CF
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // D0-DF
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // E0-EF
-        U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, // F0-FF
+        U,                       U, U, U,                       U, U,                        U, U, // 00-07
+        U,                       U, U, U,                       U, U,                        U, U, // 08-0F
+        U,                       U, U, U,                       U, U,                        U, U, // 10-17
+        U,                       U, U, U,                       U, U,                        U, U, // 18-1F
+        U,                       U, U, U,                       U, U,                        U, U, // 20-27
+        U,                       U, U, U,                       U, U,                        U, U, // 28-2F
+        U,                       U, U, U,                       U, U,                        U, U, // 30-37
+        U,                       U, U, U,                       U, U,                        U, U, // 38-3F
+        U,                       U, U, U,                       U, U,                        U, U, // 40-47
+        KD(KEY_SCAN_ARROW_UP),   U, U, KD(KEY_SCAN_ARROW_LEFT), U, KD(KEY_SCAN_ARROW_RIGHT), U, U, // 48-4F
+        KD(KEY_SCAN_ARROW_DOWN), U, U, U,                       U, U,                        U, U, // 50-57
+        U,                       U, U, U,                       U, U,                        U, U, // 58-5F
+        U,                       U, U, U,                       U, U,                        U, U, // 60-67
+        U,                       U, U, U,                       U, U,                        U, U, // 68-6F
+        U,                       U, U, U,                       U, U,                        U, U, // 70-77
+        U,                       U, U, U,                       U, U,                        U, U, // 78-7F
+        U,                       U, U, U,                       U, U,                        U, U, // 80-87
+        U,                       U, U, U,                       U, U,                        U, U, // 88-8F
+        U,                       U, U, U,                       U, U,                        U, U, // 90-97
+        U,                       U, U, U,                       U, U,                        U, U, // 98-9F
+        U,                       U, U, U,                       U, U,                        U, U, // A0-A7
+        U,                       U, U, U,                       U, U,                        U, U, // A8-AF
+        U,                       U, U, U,                       U, U,                        U, U, // B0-B7
+        U,                       U, U, U,                       U, U,                        U, U, // B8-BF
+        U,                       U, U, U,                       U, U,                        U, U, // C0-C7
+        KU(KEY_SCAN_ARROW_UP),   U, U, KU(KEY_SCAN_ARROW_LEFT), U, KU(KEY_SCAN_ARROW_RIGHT), U, U, // C8-CF
+        KU(KEY_SCAN_ARROW_DOWN), U, U, U,                       U, U,                        U, U, // D0-D7
+        U,                       U, U, U,                       U, U,                        U, U, // D8-DF
+        U,                       U, U, U,                       U, U,                        U, U, // E0-E7
+        U,                       U, U, U,                       U, U,                        U, U, // E8-EF
+        U,                       U, U, U,                       U, U,                        U, U, // F0-F7
+        U,                       U, U, U,                       U, U,                        U, U, // F8-FF
     },
 };
 // clang-format on

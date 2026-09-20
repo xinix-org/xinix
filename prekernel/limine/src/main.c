@@ -126,7 +126,7 @@ void pkmain(void) {
     }
 
     uint64_t freq;
-    if(tsc_frequency_request.response)
+    if (tsc_frequency_request.response)
         freq = tsc_frequency_request.response->frequency;
     else
         freq = 0;

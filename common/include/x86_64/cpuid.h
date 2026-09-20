@@ -46,7 +46,7 @@ struct cpuid {
 };
 
 static inline struct cpuid cpuid_count(uint32_t leaf,
-                                uint32_t subleaf) _ATTRIBUTE_UNSEQ {
+                                       uint32_t subleaf) _ATTRIBUTE_UNSEQ {
     struct cpuid ret = {.eax = leaf, .ecx = subleaf};
     __asm__ inline("cpuid"
                    : "+a"(ret.eax), "+c"(ret.ecx), "=d"(ret.edx),
