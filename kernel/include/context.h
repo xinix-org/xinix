@@ -19,6 +19,8 @@ typedef struct kernel_context {
     _Alignas(256) struct kernel_context *self;
     size_t total_context_size;
     ucontext_t *current_thread;
+    // DO NOT UNDER ANY CIRCUMSTANCES ADD ANY FIELDS ABOVE THIS LINE!!!
+    // YOU WILL BREAK INTERUPT HANDLING CODE
     bool is_root_context;
     _Atomic(size_t) kgen_lock;
     random_generator kgen;
