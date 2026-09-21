@@ -1,3 +1,4 @@
+#include "cpu.h"
 #include "exceptions.h"
 #include <gdt.h>
 #include <memory.h>
@@ -137,7 +138,20 @@ static void load_idt(void) {
     __asm__ volatile("lidt %0" ::"m"(descriptor));
 }
 
+extern const char SYS_enter_pl0_64[];
+
+static void load_star() {
+    uint64_t star = (((uint64_t) GDT_UBASE) << 48) | (((uint64_t) GDT_KBASE) << 32) | 0;
+
+    write_msr(IA32_STAR, star);
+
+    write_msr(IA32_LSTAR, (uint64_t)(void*)SYS_enter_pl0_64);
+
+    write_msr(IA32_FMASK, (1 << 8) | (1 << 9) | (1 << 18));
+}
+
 void load_arch_state(void) {
     load_gdt();
     load_idt();
+    load_star();
 }

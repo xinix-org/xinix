@@ -52,7 +52,8 @@ struct user_context {
     void *dregs[6];
     uint64_t thread_flags[4];
     uint64_t cr4;
-    void *_pad[19];
+    void* syscall_rsp;
+    void *_pad[18];
 
     // Keep these fields near `fxsave`
     uint64_t xfd;

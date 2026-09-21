@@ -28,6 +28,8 @@ inline static const char *sysresult_describe(sysresult_t res) {
         return "Ok";
     case ERR_GENERIC:
         return "Unknown Error";
+    case ERR_INVALID_SYSTEM_FUNCTION:
+        return "Invalid system function";
     case ERR_IMAGE_VALIDATION_ERROR:
         return "Elf Image Not Valid For Target";
     case ERR_IMAGE_WX_SEG:

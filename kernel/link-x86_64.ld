@@ -21,9 +21,15 @@ SECTIONS
 
     .text :{
         *(.text)
+        xinix_syslist = .;
+        x86_64/syscall.o(.text.syscall);
+        FILL(0x00);
+        . = xinix_syslist + (8 * 4096);
+        __xinix_syslist = .;
+        *(.text.syscall);
         *(.text.*)
     } :text
-
+    
     .plt :{
         *(.plt)
     }
