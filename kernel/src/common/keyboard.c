@@ -113,7 +113,7 @@ static const char SCANCODE_TO_CHAR_MAP_UNSHIFTED[NUM_KEY_SCAN_CODES] = {
     0,   0,   0,    0,   0,   0,   '\n', 0,   0,   0,    0,   ' ', '\t'};
 
 static const char SCANCODE_TO_CHAR_MAP_SHIFTED[NUM_KEY_SCAN_CODES] = {
-    0,   '`', '|', '{', '}', '<', ')',  '!', '@', '#', '$', '%', '^',
+    0,   '~', '|', '{', '}', '<', ')',  '!', '@', '#', '$', '%', '^',
     '&', '*', '(', '+', 0,   0,   0,    'A', 'B', 'C', 'D', 'E', 'F',
     'G', 'H', 'I', 'J', 'K', 'L', 'M',  'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z',  '_', '>', '"', ':', '?', 0,
