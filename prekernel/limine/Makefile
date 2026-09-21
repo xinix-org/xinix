@@ -40,7 +40,7 @@ CC := clang
 LD := ld.lld
 OBJCOPY := llvm-objcopy
 
-objs := target/xinix-kernel-wrapped.o $(patsubst src/%.c,target/%.o,$(shell find src -type f -name '*.c')) $(patsubst ../shared/src/%.c,target/%.o,$(shell find ../shared/src -type f -name '*.c')) $(patsubst ../shared/$(ARCH)/src/%.c,target/%.o,$(shell find ../shared/$(ARCH)/src -type f -name '*.c'))
+objs := $(patsubst src/%.c,target/%.o,$(shell find src -type f -name '*.c')) $(patsubst ../shared/src/%.c,target/%.o,$(shell find ../shared/src -type f -name '*.c')) $(patsubst ../shared/$(ARCH)/src/%.c,target/%.o,$(shell find ../shared/$(ARCH)/src -type f -name '*.c'))
 depfiles := $(objs:target/%.o=target/%.d)
 outputs := target/xinix-loader
 
@@ -65,10 +65,3 @@ target/%.o: ../shared/src/%.c
 target/%.o: ../shared/$(ARCH)/src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
-
-
-target/xinix-kernel-wrapped.o: $(KERNEL)
-	@mkdir -p $(@D)
-	@cp -v $< target/ 
-	$(OBJCOPY) -I binary -O elf64-x86-64 --set-section-alignment .data=4096 --rename-section .data=.rodata,alloc,load,readonly,data,contents target/$(<F) $@
-	@rm -f target/$(<F)

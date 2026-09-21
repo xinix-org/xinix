@@ -45,6 +45,13 @@ static volatile struct limine_tsc_frequency_request tsc_frequency_request = {
     .revision = 0,
 };
 
+[[gnu::used, gnu::section(".limine_requests")]]
+static volatile struct limine_module_request module_request = {
+    .id = LIMINE_MODULE_REQUEST_ID,
+    .revision = 1,
+    .internal_module_count = 0,
+};
+
 [[gnu::used, gnu::section(".limine_requests_start")]]
 static volatile uint64_t limine_requests_start_marker[] =
     LIMINE_REQUESTS_START_MARKER;
@@ -57,7 +64,7 @@ static volatile uint64_t limine_requests_end_marker[] =
 
 [[noreturn]]
 extern void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                       void *rsdp, uint64_t tsc_freq);
+                       void *rsdp, uint64_t tsc_freq, void *kernel_start);
 
 [[noreturn]]
 extern void hcf(void);
@@ -165,5 +172,6 @@ void pkmain(void) {
                   .entries = entries};
 
     call_kmain(hhdm_request.response->offset, pfb, &map,
-               rsdp_request.response->address, freq);
+               rsdp_request.response->address, freq,
+               module_request.response->modules[0]->address);
 }

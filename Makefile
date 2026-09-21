@@ -23,6 +23,7 @@ target/$(IMAGE_NAME).iso: kernel externals/limine-binary/limine limine.conf | .e
 	rm -rf target/iso-root
 	mkdir -p target/iso-root/boot/limine
 	cp -v prekernel/target/xinix-loader target/iso-root/boot/
+	cp -v kernel/target/xinix-kernel.so target/iso-root/boot/
 	cp -v limine.conf $(limine_bios_files:%=externals/limine-binary/%) target/iso-root/boot/limine/
 	mkdir -p target/iso-root/EFI/BOOT
 	cp -v $(limine_efi_boot_files:%=externals/limine-binary/%) target/iso-root/EFI/BOOT
@@ -39,7 +40,7 @@ kernel: | .env_check
 	make -C randlib EXTERNALS=$(EXTERNALS) ARCH=$(ARCH)
 	make -C externals/flanterm-build
 	make -C kernel EXTERNALS=$(EXTERNALS) LOADER=$(shell realpath ./loader/target/loader.a) ARCH=$(ARCH) RANDLIB=$(realpath ./randlib/target/randlib.a)
-	make -C prekernel EXTERNALS=$(EXTERNALS) ARCH=$(ARCH) KERNEL=$(shell realpath ./kernel/target/xinix-kernel.so) RANDLIB=$(realpath ./randlib/target/randlib.a)
+	make -C prekernel EXTERNALS=$(EXTERNALS) ARCH=$(ARCH) RANDLIB=$(realpath ./randlib/target/randlib.a)
 	rm -f debug-kernel.gdb
 	cat debug-kernel.gdb.in | sed s/TEXT_ADDRESS/$(shell ./get-text-address.sh)/ > debug-kernel.gdb
 
