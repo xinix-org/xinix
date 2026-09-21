@@ -23,8 +23,9 @@ typedef struct kernel_context {
     ucontext_t *current_systhread;
     // DO NOT UNDER ANY CIRCUMSTANCES ADD ANY FIELDS ABOVE THIS LINE!!!
     // YOU WILL BREAK INTERUPT HANDLING CODE
-    // If you need to add a field above, ensure the static asserts continue to pass, and add new ones as needed.
-    // Only add fields that are used in assembly above.
+    // If you need to add a field above, ensure the static asserts continue to
+    // pass, and add new ones as needed. Only add fields that are used in
+    // assembly above.
     bool is_root_context;
     _Atomic(size_t) kgen_lock;
     random_generator kgen;
@@ -32,13 +33,14 @@ typedef struct kernel_context {
     volatile lapic_t *lapic; // TODO: thread-local
 } kcontext_t;
 
-// Do not break under any circumstances. context code relies on this reflexive relation
+// Do not break under any circumstances. context code relies on this reflexive
+// relation
 static_assert(offsetof(kcontext_t, self) == 0);
 
 // If necessarily broken, adjust `idt.s` and `syscall.s`
-static_assert(offsetof(kcontext_t, current_thread) == 2 * sizeof(void*));
-static_assert(offsetof(kcontext_t, current_uthread) == 3 * sizeof(void*));
-static_assert(offsetof(kcontext_t, current_systhread) == 4 * sizeof(void*));
+static_assert(offsetof(kcontext_t, current_thread) == 2 * sizeof(void *));
+static_assert(offsetof(kcontext_t, current_uthread) == 3 * sizeof(void *));
+static_assert(offsetof(kcontext_t, current_systhread) == 4 * sizeof(void *));
 
 kcontext_t *getcontext(void);
 
