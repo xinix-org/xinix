@@ -205,10 +205,22 @@ typedef enum kbd_scan_code : uint16_t {
 
     NUM_KEY_SCAN_CODES,
 
+    KEY_SCAN_VALUE_MASK = 0x7FFF,
     KEY_SCAN_RELEASE = 0x8000
 } kbd_scan_code_t;
 
+typedef struct kbd_modifiers {
+    bool shift : 1;
+    bool ctrl : 1;
+    bool alt : 1;
+} kbd_modifiers_t;
+
+typedef struct kbd_scan_status {
+    kbd_scan_code_t scan_code;
+    kbd_modifiers_t modifiers;
+} kbd_scan_status_t;
+
 void kbd_process_scancode_byte(uint8_t input);
 
-kbd_scan_code_t kbd_poll_key(void);
-char kbd_get_char_for_scancode(kbd_scan_code_t code);
+kbd_scan_status_t kbd_poll_key(void);
+char kbd_get_char_for_scancode(kbd_scan_code_t code, kbd_modifiers_t modifiers);

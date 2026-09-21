@@ -214,35 +214,36 @@ void run_prompt() {
         line_end_x = cursor_start_x;
         line_end_y = cursor_start_y;
         while (true) {
-            kbd_scan_code_t scan_code = kbd_poll_key();
-            if (scan_code == 0) {
+            kbd_scan_status_t scan_status = kbd_poll_key();
+            if (scan_status.scan_code == 0) {
                 spin_loop_hint();
                 continue;
             }
-            if (scan_code & KEY_SCAN_RELEASE) {
+            if (scan_status.scan_code & KEY_SCAN_RELEASE) {
                 continue; // ignore keyup
             }
-            if (scan_code == KEY_SCAN_BACKSPACE) {
+            if (scan_status.scan_code == KEY_SCAN_BACKSPACE) {
                 if (pos != 0) {
                     memmove(&line[pos - 1], &line[pos], line_len - pos);
                     pos -= 1;
                     line_len -= 1;
                 }
-            } else if (scan_code == KEY_SCAN_ENTER) {
+            } else if (scan_status.scan_code == KEY_SCAN_ENTER) {
                 printf("\r\n");
                 break;
-            } else if (scan_code == KEY_SCAN_ARROW_LEFT) {
+            } else if (scan_status.scan_code == KEY_SCAN_ARROW_LEFT) {
                 if (pos != 0) {
                     pos -= 1;
                 }
-            } else if (scan_code == KEY_SCAN_ARROW_RIGHT) {
+            } else if (scan_status.scan_code == KEY_SCAN_ARROW_RIGHT) {
                 if (pos < line_len) {
                     pos += 1;
                 }
-            } else if (scan_code == KEY_SCAN_TAB) {
+            } else if (scan_status.scan_code == KEY_SCAN_TAB) {
                 // TODO: tab completion or something, idk
             } else {
-                char ch = kbd_get_char_for_scancode(scan_code);
+                char ch = kbd_get_char_for_scancode(scan_status.scan_code,
+                                                    scan_status.modifiers);
                 if (ch) {
                     if (line_len + 1 == line_capacity) {
                         // need an extra byte at least for null terminator; grow

@@ -112,12 +112,43 @@ static const char SCANCODE_TO_CHAR_MAP_UNSHIFTED[NUM_KEY_SCAN_CODES] = {
     't', 'u', 'v',  'w', 'x', 'y', 'z',  '-', '.', '\'', ';', '/', 0,
     0,   0,   0,    0,   0,   0,   '\n', 0,   0,   0,    0,   ' ', '\t'};
 
+static const char SCANCODE_TO_CHAR_MAP_SHIFTED[NUM_KEY_SCAN_CODES] = {
+    0,   '`', '|', '{', '}', '<', ')',  '!', '@', '#', '$', '%', '^',
+    '&', '*', '(', '+', 0,   0,   0,    'A', 'B', 'C', 'D', 'E', 'F',
+    'G', 'H', 'I', 'J', 'K', 'L', 'M',  'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',  '_', '>', '"', ':', '?', 0,
+    0,   0,   0,   0,   0,   0,   '\n', 0,   0,   0,   0,   ' ', '\t'};
+
 #define QUEUE_LEN 256 // should be a power of 2 for better performance
 int queue_head = 0, queue_tail = 0;
-kbd_scan_code_t queue[QUEUE_LEN];
+kbd_scan_status_t queue[QUEUE_LEN];
 // queue_head == queue_tail ==> empty queue
 // (queue_head + 1) % QUEUE_LEN == queue_tail == full queue
 // one extra space is left to disambiguate
+kbd_modifiers_t modifiers = (kbd_modifiers_t){0};
+
+static void kbd_enqueue(kbd_scan_code_t scan_code) {
+    if (((scan_code & KEY_SCAN_VALUE_MASK) == KEY_SCAN_SHIFT_LEFT) ||
+        ((scan_code & KEY_SCAN_VALUE_MASK) == KEY_SCAN_SHIFT_RIGHT)) {
+        modifiers.shift = (scan_code & KEY_SCAN_RELEASE) == 0;
+    }
+    if (((scan_code & KEY_SCAN_VALUE_MASK) == KEY_SCAN_CONTROL_LEFT) ||
+        ((scan_code & KEY_SCAN_VALUE_MASK) == KEY_SCAN_CONTROL_RIGHT)) {
+        modifiers.ctrl = (scan_code & KEY_SCAN_RELEASE) == 0;
+    }
+    if (((scan_code & KEY_SCAN_VALUE_MASK) == KEY_SCAN_ALT_LEFT) ||
+        ((scan_code & KEY_SCAN_VALUE_MASK) == KEY_SCAN_ALT_RIGHT)) {
+        modifiers.alt = (scan_code & KEY_SCAN_RELEASE) == 0;
+    }
+    if ((queue_head + 1) % QUEUE_LEN == queue_tail) {
+        printf("[keyboard queue overrun; insert annoying PC speaker "
+               "beep here]");
+    } else {
+        queue[queue_head] =
+            (kbd_scan_status_t){.scan_code = scan_code, .modifiers = modifiers};
+        queue_head += 1;
+    }
+}
 
 void kbd_process_scancode_byte(uint8_t input) {
     static kbd_scan_state_t scan_state = KB_SCAN_INIT;
@@ -132,24 +163,22 @@ void kbd_process_scancode_byte(uint8_t input) {
         scan_state = transition.next_state;
         if (transition.scan_code) {
             push_event(EVENT_KEY | transition.scan_code);
-            if ((queue_head + 1) % QUEUE_LEN == queue_tail) {
-                printf("[keyboard queue overrun; insert annoying PC speaker "
-                       "beep here]");
-            } else {
-                queue[queue_head] = transition.scan_code;
-                queue_head += 1;
-            }
+            kbd_enqueue(transition.scan_code);
         }
     }
 }
 
-kbd_scan_code_t kbd_poll_key() {
+kbd_scan_status_t kbd_poll_key() {
     if (queue_head != queue_tail) {
         return queue[queue_tail++];
     }
-    return 0; // no key
+    return (kbd_scan_status_t){0}; // no key
 }
 
-char kbd_get_char_for_scancode(kbd_scan_code_t code) {
-    return SCANCODE_TO_CHAR_MAP_UNSHIFTED[code];
+char kbd_get_char_for_scancode(kbd_scan_code_t code,
+                               kbd_modifiers_t modifiers) {
+    if (modifiers.shift)
+        return SCANCODE_TO_CHAR_MAP_SHIFTED[code];
+    else
+        return SCANCODE_TO_CHAR_MAP_UNSHIFTED[code];
 }
