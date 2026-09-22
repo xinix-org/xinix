@@ -108,7 +108,7 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
 
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp, uint64_t tsc_freq, void *kernel_start) {
+                void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;
@@ -132,7 +132,7 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
         }
     }
 
-    ptrdiff_t offset = ((ElfNative_Ehdr *)kernel_start)->e_entry;
+    ptrdiff_t offset = kernel_start->e_entry;
 
     kmain_t *kmain = (kmain_t *)(root + offset);
 

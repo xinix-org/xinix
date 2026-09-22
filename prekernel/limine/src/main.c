@@ -64,7 +64,7 @@ static volatile uint64_t limine_requests_end_marker[] =
 
 [[noreturn]]
 extern void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                       void *rsdp, uint64_t tsc_freq, void *kernel_start);
+                       void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start);
 
 [[noreturn]]
 extern void hcf(void);
@@ -173,5 +173,5 @@ void pkmain(void) {
 
     call_kmain(hhdm_request.response->offset, pfb, &map,
                rsdp_request.response->address, freq,
-               module_request.response->modules[0]->address);
+               (ElfNative_Ehdr*)module_request.response->modules[0]->address);
 }
