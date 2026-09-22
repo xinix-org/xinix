@@ -16,8 +16,6 @@ typedef void kmain_t(int argc, char *argv[], char *envp[], auxv_t auxv[]);
 
 extern void init_cpu_feature_array(void);
 
-extern ElfNative_Ehdr _binary_target_xinix_kernel_so_start;
-
 uintptr_t hhdm_offset;
 
 static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
@@ -110,13 +108,12 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
 
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp, uint64_t tsc_freq) {
+                void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;
 
-    auto res =
-        loader_map_elf(&_binary_target_xinix_kernel_so_start, nullptr, nullptr);
+    auto res = loader_map_elf(kernel_start, nullptr, nullptr);
 
     if (SYSRESULT2_CODE(res) < 0)
         hcf();
@@ -135,7 +132,7 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
         }
     }
 
-    ptrdiff_t offset = _binary_target_xinix_kernel_so_start.e_entry;
+    ptrdiff_t offset = kernel_start->e_entry;
 
     kmain_t *kmain = (kmain_t *)(root + offset);
 
