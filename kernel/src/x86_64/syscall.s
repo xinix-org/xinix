@@ -66,6 +66,12 @@ SYS_enter_pl0_64:
     mov qword ptr [r11+232], rcx
     mov rcx, dr7
     mov qword ptr [r11+240], rcx
+    lea rcx, [r11+512]
+    mov r9, [rcx-8]
+    cmp r9, 512
+    jl SYS_enter_pl0_64._no_mxcsr
+    stmxcsr dword ptr [rcx+24]
+    SYS_enter_pl0_64._no_mxcsr:
     mov r9, r11
     cmp rax, 4096
     jae SYS_enter_pl0_64._nosys
@@ -86,7 +92,7 @@ SYS_enter_pl0_64:
     mov rsi, [rcx-8]
     cmp rsi, 512
     ja SYS_enter_pl0_64._avx_clear
-    jb SYS_enter_pl0_64._end_sse
+    jb SYS_enter_pl0_64._no_sse
     xorps xmm0, xmm0
     xorps xmm1, xmm1
     xorps xmm2, xmm2
@@ -107,6 +113,8 @@ SYS_enter_pl0_64:
     SYS_enter_pl0_64._avx_clear:
     vzeroall
     SYS_enter_pl0_64._end_sse:
+    ldmxcsr dword ptr [rcx+24]
+    SYS_enter_pl0_64._no_sse:
     mov rcx, qword ptr [r11+232]
     mov dr6, rcx
     mov rcx, qword ptr [r11+224]

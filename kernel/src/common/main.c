@@ -125,10 +125,10 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
         if ((size_t)context->gregs[3] == DEBUG_MAGIC &&
             (size_t)context->gregs[15] == DEBUG_MAGIC2) {
             printf("\r\n");
-            printf("Debug Trap from %s (%X)\r\n", context->gregs[6],
-                   context->gregs[1]);
+            printf("Debug Trap from %s (%ld)\r\n", (const char*)context->gregs[6],
+                   (unsigned long)context->gregs[1]);
             printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
-            printf("Function %s (%p)\r\n\r\n", context->gregs[2],
+            printf("Function %s (%p)\r\n\r\n", (const char*)context->gregs[2],
                    context->gregs[0]);
         }
         handle_kernel_debug(context, true);
@@ -136,7 +136,7 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
         if (!((uintptr_t)context->dregs[4] & (1 << 11))) {
             context->dregs[4] =
                 (void *)(((uintptr_t)context->dregs[4]) | (1 << 11));
-        } else {
+        } else if ((context->sregs[1] & 3) == 0) {
             handle_kernel_debug(context, false);
         }
     }
@@ -491,7 +491,6 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     ctx->lapic->task_priority_register.value = 0;
     ctx->lapic->destination_format_register.value = 0xFF000000;
     install_keyboard_irq();
-    setup_timer();
 
     // Enable interrupts; should be abstracted out
     __asm__ volatile("sti");
@@ -507,6 +506,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
            rand_bytes.r[1]);
 
     random_global_gen(rand_bytes.buf);
+
+    setup_timer();
 
     printf("Random Numbers: %.16llX:%.16llX\r\n", rand_bytes.r[0],
            rand_bytes.r[1]);

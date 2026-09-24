@@ -27,14 +27,14 @@ void push_event(uint32_t r_event) {
     size_t write_pos = atomic_load_explicit(&write_head, memory_order_acquire);
 
     size_t read_pos = atomic_load_explicit(&read_head, memory_order_relaxed);
-    if (write_pos == (read_pos - 1))
+    if (write_pos == ((read_pos - 1) & 1023))
         return;
 
     atomic_store_explicit(&entropy_buffer[write_pos & 1023], total_event,
                           memory_order_relaxed);
 
     atomic_compare_exchange_strong_explicit(&write_head, &write_pos,
-                                            write_pos + 1, memory_order_release,
+                                            (write_pos + 1) & 1023, memory_order_release,
                                             memory_order_relaxed);
 }
 
@@ -49,7 +49,7 @@ static uint64_t poll_ebuf(void) {
         val = atomic_load_explicit(&entropy_buffer[read_pos & 1023],
                                    memory_order_relaxed);
     } while (atomic_compare_exchange_strong_explicit(
-        &read_head, &read_pos, read_pos + 1, memory_order_release,
+        &read_head, &read_pos, (read_pos + 1) & 1023, memory_order_release,
         memory_order_relaxed));
 
     return val;

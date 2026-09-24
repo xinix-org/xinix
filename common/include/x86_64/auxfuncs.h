@@ -3,8 +3,8 @@
 #include <location.h>
 #include <sysresult.h>
 
-#define DEBUG_MAGIC 0xDEADBEEFCAFEBABEUL
-#define DEBUG_MAGIC2 0x6c44198c4a475817UL
+#define DEBUG_MAGIC 0xDEADBEEFCAFEBABEULL
+#define DEBUG_MAGIC2 0x6c44198c4a475817ULL
 
 [[noreturn, gnu::noinline]]
 static void hcf(sysresult_t err, source_location_t *loc) {

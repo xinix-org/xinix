@@ -181,11 +181,14 @@ void init_rtc() {
     while (cmos_read(0x0A) & 0x80)
         ;
     rtc_last_init_boottime = read_boottime_micros();
-    values.seconds = cmos_read(0x00);
+    uint8_t new_seconds = cmos_read(0x00);
     if (!(rtc_format & 4))
-        values.seconds = bcd_to_bin(values.seconds);
+        new_seconds = bcd_to_bin(new_seconds);
 
-    int64_t seconds = minutes * 60 + values.seconds;
+    if(new_seconds < values.seconds)
+        new_seconds += 60;
+
+    int64_t seconds = minutes * 60 + new_seconds;
     rtc_last_init_time.time_seconds = seconds;
     rtc_last_init_time.time_nanos = 0;
 
