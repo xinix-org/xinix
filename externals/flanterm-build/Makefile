@@ -10,6 +10,8 @@ override CFLAGS += \
 	-std=c23 \
 	-fno-stack-protector \
 	-mno-sse \
+	-mno-x87 \
+	-mno-red-zone \
 	--target=x86_64-unknown-none-elf \
 	-fpic \
 	-fvisibility=hidden
