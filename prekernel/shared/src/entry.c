@@ -1,3 +1,4 @@
+#include "uuid.h"
 #include <alloc.h>
 #include <auxv.h>
 #include <cmp.h>
@@ -108,7 +109,8 @@ static sysresult2_t loader_map_elf(const ElfNative_Ehdr *e_hdr,
 
 [[noreturn]]
 void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start) {
+                void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start,
+                char* kernel_path, uuid* kernel_boot_uuid, uint32_t mbr_disk_id, uint8_t mbr_part_idx) {
     init_cpu_feature_array();
 
     hhdm_offset = _hhdm_offset;
@@ -162,6 +164,16 @@ void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
         (auxv_t){.a_type = AT_KXINIX_HHDM_OFFSET, .a_un.a_val = hhdm_offset};
     *auxtarg++ = (auxv_t){.a_type = AT_KXINIX_MEMMAP, .a_un.a_ptr = memmap};
     *auxtarg++ = (auxv_t){.a_type = AT_BASE, .a_un.a_ptr = nullptr};
+    
+    // if(kernel_path)
+    //     *auxtarg++ = (auxv_t){.a_type = AT_EXECFN, .a_un.a_ptr = (void*)kernel_path};
+    
+    // if(kernel_boot_uuid)
+    //     *auxtarg ++ = (auxv_t){.a_type = AT_KXINIX_BOOTP_GUID, .a_un.a_ptr = kernel_boot_uuid};
+
+    // else if (mbr_disk_id)
+    //     *auxtarg ++ = (auxv_t){.a_type = AT_KXINIX_BOOTP_MBR, .a_un.a_val = (((unsigned long)mbr_disk_id) << 8) | (mbr_part_idx)};
+    
 
     if (tsc_freq != 0) {
         if (sizeof(size_t) < sizeof(void *))

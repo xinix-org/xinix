@@ -156,6 +156,7 @@ SYS_enter_pl0_64:
     mov rcx, qword ptr [r11+128]
     mov r11, r10
     xor r10, r10
+    swapgs
     sysretq
 
 

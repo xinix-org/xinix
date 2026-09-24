@@ -22,6 +22,8 @@ typedef struct {
 
 #define AT_RANDOM 26 // Points to 16 random bytes
 
+#define AT_EXECFN 31
+
 // Xinix specific region begins at 64
 
 #define AT_XINIX_CPU_FEATURES_ARRAY 80 // pointer to an array of cpu features

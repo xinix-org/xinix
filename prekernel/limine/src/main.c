@@ -1,3 +1,4 @@
+#include "uuid.h"
 #include <alloc.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -10,6 +11,8 @@
 #include <limine.h>
 
 #include <membarrier.h>
+
+#include <memory.h>
 
 /// LIMINE REQUESTS ///
 
@@ -65,7 +68,7 @@ static volatile uint64_t limine_requests_end_marker[] =
 
 [[noreturn]]
 extern void call_kmain(size_t _hhdm_offset, framebuffer *fb, memmap *memmap,
-                       void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start);
+                       void *rsdp, uint64_t tsc_freq, ElfNative_Ehdr *kernel_start, const char* kernel_path, uuid* kernel_boot_uuid, uint32_t mbr_disk_id, uint8_t mbr_part_idx);
 
 [[noreturn]]
 extern void hcf(void);
@@ -139,6 +142,28 @@ void pkmain(void) {
     else
         freq = 0;
 
+    if(!module_request.response || module_request.response->module_count == 0)
+        hcf();
+    auto* kernel = module_request.response->modules[0];
+    if(!kernel)
+        hcf();
+
+    size_t len = kernel->path ? strlen(kernel->path) : 0;
+    char* kernel_name = malloc(len + 1);
+    memcpy(kernel_name, kernel->path, len);
+    kernel_name[len] = 0;
+
+    uuid* kernel_boot_id = nullptr;
+
+    auto lim_uuid = kernel->gpt_part_uuid;
+
+    uuid xin_uuid = UUID_DEF(lim_uuid.a, lim_uuid.b, lim_uuid.c, (((uint16_t)lim_uuid.d[0]) << 8) | (lim_uuid.d[1]), 
+        (((uint64_t)lim_uuid.d[2]) << 40) | (((uint64_t)lim_uuid.d[3]) << 32) | (((uint64_t)lim_uuid.d[3]) << 32) | (((uint64_t)lim_uuid.d[4]) << 24) 
+        | (((uint64_t)lim_uuid.d[5]) << 16) | (((uint64_t)lim_uuid.d[6]) << 8) | (((uint64_t)lim_uuid.d[7]) << 0));
+    
+    if(xin_uuid.uuid_lo || xin_uuid.uuid_hi)
+        kernel_boot_id = &xin_uuid;
+
     // *** NOTE: HERE BE DRAGONS. THIS MUST BE LAST, OR ELSE THE KERNEL WILL ***
     // *** BE TOLD SOME MEMORY IS USABLE THAT DEFINITELY IS NOT.             ***
 
@@ -174,5 +199,5 @@ void pkmain(void) {
 
     call_kmain(hhdm_request.response->offset, pfb, &map,
                rsdp_request.response->address, freq,
-               (ElfNative_Ehdr*)module_request.response->modules[0]->address);
+               (ElfNative_Ehdr*)kernel->address, kernel_name, kernel_boot_id , kernel->mbr_disk_id, kernel->partition_index);
 }

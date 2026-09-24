@@ -11,7 +11,7 @@ run: build
         -boot d \
         -m 2G
 
-run-trace-exceptions: build
+run-exception-trace: build
     qemu-system-x86_64 \
         -M q35 \
         -cdrom target/xinix-dev.iso \

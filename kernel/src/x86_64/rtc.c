@@ -192,10 +192,10 @@ void init_rtc() {
     printf("RTC Initialized\r\n");
     printf("RTC: %0.4u-%0.2u-%0.2u %0.2u:%0.2u:%0.2uZ\r\n", year, values.months,
            values.days, values.hours, values.minutes, values.seconds);
-    printf("Unix Time: %w64d\r\n", seconds);
+    printf("UTC Time: %w64d\r\n", seconds);
 }
 
-duration_t read_global_rtc() {
+duration_t read_global_rtc(void) {
     duration_t base_rtc = rtc_last_init_time;
     uint64_t boottime = rtc_last_init_boottime;
     uint64_t cur_boottime = read_boottime_micros();
@@ -212,6 +212,8 @@ duration_t read_global_rtc() {
     uint64_t seconds_delta = diff / 1'000'000;
     uint32_t nanos_delta = (diff % 1'000'000) * 1'000;
 
-    return duration_add(base_rtc, (duration_t){.time_seconds = seconds_delta,
+    auto dur = duration_add(base_rtc, (duration_t){.time_seconds = seconds_delta,
                                                .time_nanos = nanos_delta});
+
+    return dur;
 }

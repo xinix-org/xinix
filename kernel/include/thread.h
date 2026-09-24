@@ -20,6 +20,7 @@ struct thread {
     uint64_t thrd_gid;
     struct process *thd_proc;
     ucontext_t *thrd_uctx;
+    ucontext_t *thrd_sysctx;
     bool thrd_is_kernel;
     duration_t thrd_last_tsc;
     duration_t thrd_cmono;

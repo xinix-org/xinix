@@ -8,9 +8,9 @@ typedef struct {
 } uuid;
 
 #define UUID_DEF(_hi, _mid1, _mid2, _mid3, _lo)                                \
-    ((uuid){.uuid_lo = (UINT64_C(_mid3) << 48) | UINT64_C(_lo),                \
-            .uuid_hi = (UINT64_C(_hi) << 32) | (UINT64_C(_mid1) << 16) |       \
-                       UINT64_C(_mid2)})
+    ((uuid){.uuid_lo = ((uint64_t)(_mid3) << 48) | (uint64_t)(_lo),                \
+            .uuid_hi = ((uint64_t)(_hi) << 32) | ((uint64_t)(_mid1) << 16) |       \
+                       (uint64_t)(_mid2)})
 
 #define NIL_UUID ((uuid){})
 #define FULL_UUID ((uuid){.uuid_lo = ~UINT64_C(0), .uuid_hi = ~UINT64_C(0)})

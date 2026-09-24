@@ -89,7 +89,7 @@ ucontext_t *timer_irq(ucontext_t *context) {
 
     ctx->last_timer_tsc = dur;
 
-    push_event(TIMER(step.time_nanos & 0xFFFFFF));
+    // push_event(TIMER(step.time_nanos & 0xFFFFFF));
 
     if (ctx->is_root_context) {
         uint64_t micros =
@@ -108,8 +108,9 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
         keyboard_irq();
         return context;
     } else if (irq == IRQ_TIMER) {
-        printf("Got timer interrupt\r\n");
         return timer_irq(context);
+    } else if (irq == IRQ_SPURIOUS) {
+        return context;
     }
     const char *name = exception_name(irq);
     if (name)
@@ -185,8 +186,8 @@ void setup_timer(void) {
 
     lapic->divide_configuration_register.value = 0x3;
     lapic->initial_count_register.value = 0xFFF;
-    lapic->lvt_timer_register.value = (2 << 17) | IRQ_TIMER;
-    lapic->spurious_interrupt_vector_register.value = IRQ_SPURIOUS;
+    lapic->lvt_timer_register.value = 0x20000 | IRQ_TIMER;
+    lapic->spurious_interrupt_vector_register.value = 0x100 | IRQ_SPURIOUS;
 }
 
 void init_tsc(void);
@@ -195,6 +196,9 @@ void eval(const char *line) {
     // TODO: do this less stupidly
     if (memcmp(line, "echo ", 5) == 0) {
         printf("%s\r\n", &line[5]); // skip the command and the following space
+    } else if (memcmp(line, "time", 5) == 0) {
+        duration_t rtc = read_global_rtc();
+        printf("%w64d\r\n", rtc.time_seconds);
     } else {
         printf("command not found\r\n");
     }
@@ -378,6 +382,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     ctx->total_context_size = sizeof(kcontext_t);
     ctx->self = ctx;
     ctx->current_thread = tctx;
+    ctx->current_uthread = tctx;
     ctx->is_root_context = true; // Only true on the first thread
     const uint8_t *at_rand = getauxval(AT_RANDOM).a_ptr;
     ctx->kgen = RAND_GEN_STATIC_INIT;
@@ -486,7 +491,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     ctx->lapic->task_priority_register.value = 0;
     ctx->lapic->destination_format_register.value = 0xFF000000;
     install_keyboard_irq();
-    // setup_timer();
+    setup_timer();
 
     // Enable interrupts; should be abstracted out
     __asm__ volatile("sti");
@@ -526,3 +531,13 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     run_prompt();
     // hcf(0, CURRENT());
 }
+
+struct test_prg_file {
+    size_t text_size;
+    size_t data_size;
+    size_t bss_size;
+    size_t entry;
+    char prg[];
+};
+
+extern struct test_prg_file _test_prg_start;
