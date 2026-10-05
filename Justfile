@@ -29,21 +29,21 @@ run-cpu-host: build
         -cpu host
 
 debug: build
-    qemu-system-x86_64 \
+    screen -dmS qemu qemu-system-x86_64 \
         -M q35 \
         -cdrom target/xinix-dev.iso \
         -boot d \
         -m 2G \
-        -s -S &
+        -s -S
     gdb -x debug-kernel.gdb
 
 debug-prekernel: build
-    qemu-system-x86_64 \
+    screen -dmS qemu qemu-system-x86_64 \
         -M q35 \
         -cdrom target/xinix-dev.iso \
         -boot d \
         -m 2G \
-        -s -S &
+        -s -S
     gdb -x debug-prekernel.gdb
 
 format:
