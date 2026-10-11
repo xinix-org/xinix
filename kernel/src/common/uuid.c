@@ -40,10 +40,8 @@ sysresult_t uuid_genv7(uuid *u) {
     if(time < 0 || time > 0xFFFF'FFFF'FFFFULL)
         return ERR_GENERIC;
 
-    res.uuid_hi = (time << 16) | (7 << 12) | res[0] & 0xFFF;
-    res.uuid_lo = (0b10 << 62) | res[1] & 0x3FFF'FFFF'FFFF'FFFFFULL;
-
-    *u = res;
+    u->uuid_hi = (time << 16) | (7 << 12) | (buf.res[0] & 0xFFF);
+    u->uuid_lo = (0b10ULL << 62) | (buf.res[1] & 0x3FFF'FFFF'FFFF'FFFFULL);
 
     return 0;
 }
