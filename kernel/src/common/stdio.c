@@ -7,8 +7,12 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <strslice.h>
+#include <stdatomic.h>
 
 FILE *stdout;
+
+_Atomic(bool) is_terminal_init;
+
 
 int printf(const char *restrict format, ...) {
     va_list args;
@@ -44,7 +48,11 @@ int snprintf(char *restrict buffer, size_t bufsz, const char *restrict format,
 }
 
 int vprintf(const char *restrict format, va_list vlist) {
-    return vfprintf(stdout, format, vlist);
+
+    if(atomic_load_explicit(&is_terminal_init, memory_order_acquire))
+        return vfprintf(stdout, format, vlist);
+    else
+        return -1;
 }
 
 struct string_file_data {

@@ -75,6 +75,8 @@ void keyboard_irq(void) {
 
 void isr_increment_boottime(uint64_t dt_micros);
 
+extern _Atomic(bool) is_terminal_init;
+
 ucontext_t *timer_irq(ucontext_t *context) {
     kcontext_t *ctx = getcontext();
 
@@ -164,7 +166,7 @@ ucontext_t *handle_int_with_code(ucontext_t *context, int irq, long errcode) {
             if (!(errcode & (1L << n)))
                 flags[15 - n] = '-';
         printf("Page Fault CR2=%p, ERR=[%S]\r\n", cr2, STRING(flags));
-        hcf(-1, CURRENT());
+        hcf(-1, CURRENT(), "Page Fault");
     }
 
     return context;
@@ -199,6 +201,8 @@ void eval(const char *line) {
     } else if (memcmp(line, "time", 5) == 0) {
         duration_t rtc = read_global_rtc();
         printf("%w64d\r\n", rtc.time_seconds);
+    } else if (memcmp(line, "crash", 6) == 0) {
+        hcf(ERR_GENERIC, CURRENT(), "Explicit Crash Dump");
     } else {
         printf("command not found\r\n");
     }
@@ -254,7 +258,7 @@ void run_prompt() {
                         // the buffer
                         char *new_line = malloc(line_capacity * 2);
                         if (!new_line) {
-                            hcf(ERR_GENERIC, CURRENT());
+                            hcf(ERR_GENERIC, CURRENT(), "Malloc Failed");
                         }
                         memcpy(new_line, line, line_capacity);
                         line_capacity *= 2;
@@ -349,6 +353,8 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     stdout->data = ft_ctx;
     stdout->write = stdout_handler;
 
+    atomic_store_explicit(&is_terminal_init, true, memory_order_release);
+
     const char msg[] =
         "Xinix Version 0.0.0\r\n(that's right, even less than 0.0.1)\r\n\r\n";
     flanterm_write(ft_ctx, msg, sizeof(msg));
@@ -361,17 +367,11 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
     if (!ctx) {
-        printf("Error allocating initial core kcontext\r\n");
-        // hcf(ERR_GENERIC, CURRENT());
-        for (;;)
-            __asm__ volatile("hlt");
+        hcf(ERR_GENERIC, CURRENT(), "Error allocating initial core kcontext");
     }
     ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
     if (!tctx) {
-        printf("Error allocating initial kernel thread context");
-        // hcf(ERR_GENERIC, CURRENT());
-        for (;;)
-            __asm__ volatile("hlt");
+        hcf(ERR_GENERIC, CURRENT(), "Error allocating initial kernel thread context");
     }
     memset(tctx, 0, sizeof(ucontext_t));
 
@@ -436,7 +436,7 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
         dynld_link(base_addr, _DYNAMIC, phdrs, phnum, "/xinix-kernel.so", true);
 
     if (SYSRESULT2_CODE(res) < 0)
-        hcf(SYSRESULT2_CODE(res), CURRENT());
+        hcf(SYSRESULT2_CODE(res), CURRENT(), "Kernel linking failed");
 
     auto self = SYSRESULT2_VALUE(res, struct DynLibraryEntry *);
     if (self->dylib_jmprel_type == DT_RELA && self->dylib_plt_rela) {

@@ -209,7 +209,7 @@ duration_t read_global_rtc(void) {
         printf("Panick: Boot time rolled backwards (RTC initialized at %w64d, "
                "current time %w64d)",
                boottime, cur_boottime);
-        hcf(ERR_GENERIC, CURRENT());
+        hcf(ERR_GENERIC, CURRENT(), "Boot time rolled backwards");
     }
 
     uint64_t seconds_delta = diff / 1'000'000;

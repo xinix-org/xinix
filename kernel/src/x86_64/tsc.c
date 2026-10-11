@@ -16,8 +16,7 @@ void init_tsc() {
         auto val = getauxval(AT_KXINIX_TSC_FREQ).a_val;
 
         if (!val) {
-            printf("Cannot Determine TSC Frequency");
-            hcf(ERR_UNUSABLE_TSC, CURRENT());
+            hcf(ERR_UNUSABLE_TSC, CURRENT(), "Cannot Determine TSC Frequency");
         }
 
         tsc_ticks_per_second = val;
@@ -33,8 +32,7 @@ void init_tsc() {
         }
 
         if (eax15.eax) {
-            printf("TSC Frequency Faulting (Denominator is 0)\r\n");
-            hcf(ERR_UNUSABLE_TSC, CURRENT());
+            hcf(ERR_UNUSABLE_TSC, CURRENT(), "TSC Frequency Faulty (Denominator is 0)");
         }
 
         tsc_ticks_per_second = (core_freq * eax15.ebx) / eax15.eax;

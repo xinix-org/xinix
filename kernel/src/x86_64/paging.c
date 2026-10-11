@@ -108,12 +108,12 @@ void *add_to_hhdm(page_table_t *page_table, uint64_t phys_addr,
                 // we can clear the subdivision, set flags, and be done!
                 // TODO
                 printf("TODO: add_to_hhdm un-bifurcate present page\r\n");
-                hcf(0, CURRENT());
+                hcf(0, CURRENT(), nullptr);
             } else { // level doesn't match, but we can't descend...
                 printf("entered unreachable code (add_to_hhdm level never "
                        "matched granularity before hitting the bottom of the "
                        "page table)\r\n");
-                hcf(ERR_GENERIC, CURRENT());
+                hcf(ERR_GENERIC, CURRENT(), nullptr);
             }
         } else { // not present
             uint64_t masked_phys_addr = phys_addr & 0x000FFFFF'FFFFFFFF &

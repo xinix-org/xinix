@@ -30,7 +30,7 @@ typedef struct kernel_context {
     _Atomic(size_t) kgen_lock;
     random_generator kgen;
     duration_t last_timer_tsc;
-    volatile lapic_t *lapic; // TODO: thread-local
+    volatile lapic_t *lapic;
 } kcontext_t;
 
 // Do not break under any circumstances. context code relies on this reflexive
