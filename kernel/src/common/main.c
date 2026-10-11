@@ -118,7 +118,7 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
     if (name)
         printf("Got Exception #%s\r\n", name);
     else
-        printf("Got Interrupt %X)\r\n", irq);
+        printf("Got Interrupt %X\r\n", irq);
 
     print_ucontext(context);
 
@@ -203,6 +203,8 @@ void eval(const char *line) {
         printf("%w64d\r\n", rtc.time_seconds);
     } else if (memcmp(line, "crash", 6) == 0) {
         hcf(ERR_GENERIC, CURRENT(), "Explicit Crash Dump");
+    } else if (memcmp(line, "pcontext", 9) == 0) {
+        __asm__ volatile("int $0x20");
     } else {
         printf("command not found\r\n");
     }
