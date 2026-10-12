@@ -129,7 +129,10 @@ ucontext_t *handle_int(ucontext_t *context, int irq) {
             printf("\r\n");
             printf("Debug Trap from %s (%ld)\r\n", (const char*)context->gregs[6],
                    (unsigned long)context->gregs[1]);
-            printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
+            if(context->gregs[12])
+                printf("%s: %r.\r\n", (const char*)context->gregs[12], (ptrdiff_t)context->gregs[7]);
+            else
+                printf("Error Code: %r.\r\n", (ptrdiff_t)context->gregs[7]);
             printf("Function %s (%p)\r\n\r\n", (const char*)context->gregs[2],
                    context->gregs[0]);
         }
@@ -367,18 +370,18 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
 
     printf("Address of printf is %#.16llX\r\n\r\n", printf);
 
-    kcontext_t *ctx = calloc(1, sizeof(kcontext_t));
+    kcontext_t *ctx = zalloc_ty(kcontext_t);
     if (!ctx) {
         hcf(ERR_GENERIC, CURRENT(), "Error allocating initial core kcontext");
     }
-    ucontext_t *tctx = aligned_alloc(alignof(ucontext_t), sizeof(ucontext_t));
+    ucontext_t *tctx = zalloc_ty(ucontext_t);
     if (!tctx) {
         hcf(ERR_GENERIC, CURRENT(), "Error allocating initial kernel thread context");
     }
     memset(tctx, 0, sizeof(ucontext_t));
 
     random_generator *gen =
-        aligned_alloc(alignof(random_generator), sizeof(random_generator));
+        alloc_ty(random_generator);
     *gen = RAND_GEN_STATIC_INIT;
     tctx->xsave_size = FXSAVE_SIZE; // Uncomment when we turn on cr4.fxsr
     ctx->total_context_size = sizeof(kcontext_t);
@@ -466,10 +469,10 @@ extern void kmain(int argc, char *argv[], char *envp[], auxv_t auxv[],
     }
 
     struct process *kernel =
-        aligned_alloc(alignof(struct process), sizeof(struct thread));
+        alloc_ty(struct process);
 
     struct thread *thread =
-        aligned_alloc(alignof(struct thread), sizeof(struct thread));
+        alloc_ty(struct thread);
 
     kernel->proc_uid = UID_KERNEL;
     kernel->proc_gid = UID_KERNEL;
