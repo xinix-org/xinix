@@ -28,6 +28,7 @@ void free_aligned_sized(void *ptr, size_t alignment, size_t size);
 
 #define alloc_ty(Ty) (typeof(Ty)*)(aligned_alloc(alignof(Ty), sizeof(Ty)))
 #define zalloc_ty(Ty) (typeof(Ty)*)(aligned_zalloc(alignof(Ty), sizeof(Ty)))
+#define calloc_ty(Ty, n) (typeof(Ty)*)(aligned_zalloc(alignof(Ty), (n)*sizeof(Ty)))
 
 size_t strlen(const char *str);
 size_t strnlen(const char *str, size_t maxlen);
