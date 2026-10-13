@@ -2,10 +2,28 @@
 
 #include <stddef.h>
 
+#include <bits/feat_test.h>
+
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 void *memset(void *dest, int ch, size_t count);
 void *memmove(void *dest, const void *src, size_t count);
 int memcmp(const void *lhs, const void *rhs, size_t count);
+
+#if __has_builtin(__builtin_memcpy)
+#define memcpy(dest, src, n) __builtin_memcpy(dest, src, n)
+#endif
+
+#if __has_builtin(__builtin_memset)
+#define memset(dest, ch, count) __builtin_memset(dest, ch, count)
+#endif
+
+#if __has_builtin(__builtin_memmove)
+#define memmove(dest, src, n) __builtin_memmove(dest, src, n)
+#endif
+
+#if __has_builtin(__builtin_memcmp)
+#define memcmp(src1, src2, count) __builtin_memcmp(src1, src2, count)
+#endif
 
 void init_heap(void);
 

@@ -30,7 +30,7 @@ int __rand_slow_get_entropy_backing(uint8_t _output[static restrict 16]) {
         }
 
         a[1] = ((((uint64_t)__rand_slow_get_entropy_backing) << 20) &
-                0xFFFF'FFFF'0000'0000);
+                0xFFFF'FFFF'0000'0000ULL);
         for (size_t i = 0; i < 64; i += 2) {
             uint32_t r;
             __asm__ volatile("cpuid\n\trdtsc" : "=a"(r)::"edx", "ecx", "ebx");
