@@ -40,10 +40,17 @@ static void init_xsave_info(void) {
 const void* (xsave_get_state)(const struct user_context* _uctx, enum xsave_component _comp) {
     auto xsave_hdr = xsave_get_header(_uctx);
 
-    if (!xsave_hdr)
-        return nullptr;
+    if (!xsave_hdr){
+        // special case: If thread is using fxsave, these two state components are always saved.
+        // This is not above because
+        if((_comp == xsave_x87 || _comp == xsave_xmm) && _uctx->xsave_size == 512)
+            return &_uctx->fxsave;
+        else
+            return nullptr;
+    }
 
-    if(xsave_hdr->xstate_bv & (1ULL << _comp))
+    // x87 is always present, but sse may not be
+    if((xsave_hdr->xstate_bv | 1) & (1ULL << _comp))
         return nullptr;
 
     call_once(&xsave_init, init_xsave_info);
@@ -70,7 +77,7 @@ const void* (xsave_get_state)(const struct user_context* _uctx, enum xsave_compo
 
 sysresult_t xsave_read_xmm(const struct user_context* _uctx, uint8_t _vreg, struct zmmreg *_val) {
 
-    size_t maxvl;
+    size_t maxvl = 0;
     if(_vreg > 16) {
         if(!(_uctx->xcr0_allowed & (1ULL << xsave_avx512zmmx)))
             return ERR_GENERIC;
@@ -88,19 +95,21 @@ sysresult_t xsave_read_xmm(const struct user_context* _uctx, uint8_t _vreg, stru
 
         auto xmm = xsave_get_state(_uctx, xsave_xmm);
 
-        _val->pieces[0].pieces[0] = xmm->xmm[_vreg];
+        if(xmm){
+            _val->pieces[0].pieces[0] = xmm->xmm[_vreg];
 
-        maxvl = 16;
+            maxvl = 16;
 
-        auto ymmup = xsave_get_state(_uctx, xsave_avx);
+            auto ymmup = xsave_get_state(_uctx, xsave_avx);
 
-        if(ymmup) {
-            _val->pieces[0].pieces[1] = ymmup->ymmup[_vreg];
-            maxvl = 32;
-            auto zmmup = xsave_get_state(_uctx, xsave_avx512zmmup);
-            if(zmmup) {
-                _val->pieces[1] = zmmup->zmmup[_vreg];
-                maxvl = 64;
+            if(ymmup) {
+                _val->pieces[0].pieces[1] = ymmup->ymmup[_vreg];
+                maxvl = 32;
+                auto zmmup = xsave_get_state(_uctx, xsave_avx512zmmup);
+                if(zmmup) {
+                    _val->pieces[1] = zmmup->zmmup[_vreg];
+                    maxvl = 64;
+                }
             }
         }
 

@@ -51,9 +51,9 @@ struct xsave_header {
     uint64_t _reserved16[6];
 };
 
-static inline struct xsave_header* xsave_get_header(struct user_context* _uctx) {
+static inline const struct xsave_header* xsave_get_header(const struct user_context* _uctx) {
     if (_uctx->xsave_size >= MIN_XSAVE_SIZE)
-        return (struct xsave_header*)_uctx->restxsave;
+        return (const struct xsave_header*)_uctx->restxsave;
     else
         return nullptr;
 }
